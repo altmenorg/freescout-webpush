@@ -23,9 +23,9 @@ to end and only the subscribed device can read them.
 - In the installed app, a one-time prompt offers to turn notifications on.
 - English and French.
 
-![Notifications on this device, in Profile › Notifications](screenshots/profile.png)
+![Notifications on this device, in Profile › Notifications (FreeScout's stock interface)](screenshots/profile.png)
 
-![Settings](screenshots/settings.png)
+![Settings (FreeScout's stock interface)](screenshots/settings.png)
 
 ## Requirements
 
