@@ -35,7 +35,7 @@ to end and only the subscribed device can read them.
 
 ## Installation
 
-1. Download the latest release and unzip it into the `Modules` folder of FreeScout: you get `Modules/WebPush`
+1. Download [`WebPush.zip`](https://github.com/altmenorg/freescout-webpush/releases/latest/download/WebPush.zip) from the latest release and unzip it into the `Modules` folder of FreeScout: you get `Modules/WebPush`
    (the folder **must** have this name).
 2. In FreeScout, **Manage › Modules**: activate **Web Push**.
 3. Optional: **Manage › Settings › Web Push** to set the app name and icon.
@@ -45,6 +45,8 @@ to end and only the subscribed device can read them.
 **Coming from Refresh 1.2 or older** (this feature used to be part of it): update Refresh to 1.3 or newer and install
 this module. Its settings, server keys and device subscriptions are taken over automatically: subscribed devices keep
 receiving notifications without doing anything.
+
+**Updates:** from version 1.0.1, FreeScout tells you in **Manage › Modules** when a new version is out, and the **Update** button installs it in one click. From an older version, update once by hand as above.
 
 ## Settings
 
