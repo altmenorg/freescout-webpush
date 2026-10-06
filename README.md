@@ -80,6 +80,8 @@ Log in to FreeScout first, in the browser of the device, then:
    **Install this site as an app** (Edge).
 2. Click **Install**. FreeScout opens in its own window, and can be pinned to the taskbar or the dock.
 
+![The install icon at the right end of Chrome's address bar](screenshots/install-desktop-chrome.png)
+
 **Firefox** can install web apps on Android only: on a computer, use Chrome or Edge to install the app.
 (Notifications themselves work in Firefox on a computer too, without installing anything.)
 
