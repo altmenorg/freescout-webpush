@@ -1,10 +1,18 @@
-# Web Push for FreeScout
+# Web Push for FreeScout — install FreeScout as an app
+
+**This module lets your agents install [FreeScout](https://freescout.net) as an app, right from their browser**, on
+their phone or computer: no app store, nothing to download. FreeScout then opens in its own window, with its own icon
+on the home screen, the taskbar or the dock, like any other app.
+
+And it **notifies them of new tickets and replies, even when FreeScout is closed**, like a mobile app would.
+
+→ [How to install the app](#install-freescout-as-an-app), once the module is activated.
+
+*For the technically minded:* FreeScout becomes a Progressive Web App (PWA), and notifications are sent with the Web
+Push standard, through the browser's own push service. No third-party relay: notifications are encrypted end to end
+and only the subscribed device can read them.
 
 > Built as part of [Refresh](https://github.com/altmenorg/freescout-refresh), a new interface for FreeScout inspired by Freshdesk. Works with or without it.
-
-Install [FreeScout](https://freescout.net) as an app on phones and desktops, and get **Web Push notifications**, even
-when FreeScout is closed. No mobile app to install from a store, no third-party relay: notifications are encrypted end
-to end and only the subscribed device can read them.
 
 ## Features
 
@@ -39,14 +47,44 @@ to end and only the subscribed device can read them.
    (the folder **must** have this name).
 2. In FreeScout, **Manage › Modules**: activate **Web Push**.
 3. Optional: **Manage › Settings › Web Push** to set the app name and icon.
-4. Each agent: open FreeScout on their phone, install the app, then **Profile › Notifications** › *Turn on*, and tick
-   the events of the *Mobile* column.
+4. Each agent: [install the app](#install-freescout-as-an-app) on their phone or computer, then
+   **Profile › Notifications** › *Turn on*, and tick the events of the *Mobile* column.
 
 **Coming from Refresh 1.2 or older** (this feature used to be part of it): update Refresh to 1.3 or newer and install
 this module. Its settings, server keys and device subscriptions are taken over automatically: subscribed devices keep
 receiving notifications without doing anything.
 
 **Updates:** from version 1.0.1, FreeScout tells you in **Manage › Modules** when a new version is out, and the **Update** button installs it in one click. From an older version, update once by hand as above.
+
+## Install FreeScout as an app
+
+Log in to FreeScout first, in the browser of the device, then:
+
+**Android — Chrome**
+
+1. Tap the **⋮** menu at the top right.
+2. Tap **Install app** (on some phones: *Add to Home screen* › *Install*).
+3. Confirm. The FreeScout icon appears on the home screen and in the app drawer.
+
+**iPhone / iPad — Safari** (iOS 16.4 or newer)
+
+1. Tap the **Share** button (the square with an arrow).
+2. Tap **Add to Home Screen**, then **Add**.
+3. Open FreeScout **from its new icon**: on iPhone, notifications only work in the app added to the Home Screen, not in
+   Safari itself.
+
+**Windows, macOS, Linux — Chrome or Edge**
+
+1. Click the **install icon** at the right end of the address bar (a small screen with a down arrow).
+   If you don't see it: **⋮** menu › **Cast, save and share** › **Install** (Chrome), or **…** menu › **Apps** ›
+   **Install this site as an app** (Edge).
+2. Click **Install**. FreeScout opens in its own window, and can be pinned to the taskbar or the dock.
+
+**Firefox** can install web apps on Android only: on a computer, use Chrome or Edge to install the app.
+(Notifications themselves work in Firefox on a computer too, without installing anything.)
+
+Once the app is installed, it offers once to turn notifications on; this can also be done any time from
+**Profile › Notifications** › *Notifications on this device*.
 
 ## Settings
 
