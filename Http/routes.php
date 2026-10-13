@@ -8,6 +8,7 @@ Route::group(['middleware' => 'web', 'prefix' => \Helper::getSubdirectory(), 'na
     Route::get('/webpush/key', ['uses' => 'WebPushController@key', 'middleware' => ['auth', 'roles'], 'roles' => ['admin', 'user']])->name('webpush.key');
     Route::post('/webpush/subscribe', ['uses' => 'WebPushController@subscribe', 'middleware' => ['auth', 'roles'], 'roles' => ['admin', 'user']])->name('webpush.subscribe');
     Route::post('/webpush/unsubscribe', ['uses' => 'WebPushController@unsubscribe', 'middleware' => ['auth', 'roles'], 'roles' => ['admin', 'user']])->name('webpush.unsubscribe');
+    Route::get('/webpush/devices', ['uses' => 'WebPushController@devices', 'middleware' => ['auth', 'roles'], 'roles' => ['admin', 'user']])->name('webpush.devices');
     Route::post('/webpush/test', ['uses' => 'WebPushController@test', 'middleware' => ['auth', 'roles'], 'roles' => ['admin', 'user']])->name('webpush.test');
 
     // Former URLs of the Refresh module (1.2 and older), where this feature came from: devices subscribed back then

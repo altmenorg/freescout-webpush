@@ -50,6 +50,16 @@ class Settings
         return self::get('app_icon_url') ?: asset('android-chrome-192x192.png');
     }
 
+    /**
+     * Small monochrome icon of the Android status bar (only its shape is used): setting, else FreeScout's logo cut out
+     * of logo-icon-white-300.png (Public/img/badge.png, white on transparent, 96 px). Without it Android shows a grey
+     * square or the browser's icon.
+     */
+    public static function notificationBadge()
+    {
+        return self::get('badge_url') ?: asset(\Module::getPublicPath('webpush').'/img/badge.png');
+    }
+
     /** Contact given to the push services (Google, Mozilla, Apple) in the VAPID claims: setting, else the first admin. */
     public static function pushContact()
     {

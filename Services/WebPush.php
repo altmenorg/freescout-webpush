@@ -7,7 +7,8 @@ namespace Modules\WebPush\Services;
  * no Composer dependency:
  *  - VAPID (RFC 8292): ES256 JWT signed with the server's key, generated on first use;
  *  - aes128gcm content encryption (RFC 8291 / 8188): only the subscribed phone can read the notification.
- * Storage (outside the web root, storage/app/webpush, chmod 600): vapid.json (keys) and push_subscriptions.json (subscriptions).
+ * Storage (outside the web root, storage/app/webpush, chmod 600): vapid.json (keys) and push_subscriptions.json
+ * (subscriptions, changed under push_subscriptions.lock).
  */
 class WebPush
 {
@@ -32,11 +33,14 @@ class WebPush
         return base64_decode(strtr($str, '-_', '+/').str_repeat('=', (4 - strlen($str) % 4) % 4));
     }
 
+    /** Written to a temporary file then renamed: a reader never sees a half-written file. */
     protected static function writeJson($file, $data)
     {
         $path = self::dir().'/'.$file;
-        file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), LOCK_EX);
-        @chmod($path, 0600);
+        $tmp = $path.'.'.getmypid().'.tmp';
+        file_put_contents($tmp, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        @chmod($tmp, 0600);
+        rename($tmp, $path);
     }
 
     protected static function readJson($file)
@@ -85,6 +89,31 @@ class WebPush
         return self::readJson('push_subscriptions.json') ?: [];
     }
 
+    /**
+     * Read, change and write the subscriptions under one lock: two changes at the same time (a device subscribing while
+     * a notification drops an expired one, two queue workers) could otherwise each write their own copy and lose the
+     * other's change. $change receives the list and returns the new one, or null to leave the file untouched.
+     */
+    protected static function changeSubscriptions(callable $change)
+    {
+        $lock = fopen(self::dir().'/push_subscriptions.lock', 'c');
+        if ($lock) {
+            flock($lock, LOCK_EX);
+        }
+        try {
+            $new = $change(self::subscriptions());
+            if ($new !== null) {
+                self::writeJson('push_subscriptions.json', array_values($new));
+            }
+            return $new;
+        } finally {
+            if ($lock) {
+                flock($lock, LOCK_UN);
+                fclose($lock);
+            }
+        }
+    }
+
     public static function subscribe($user_id, $sub, $ua = '')
     {
         if (empty($sub['endpoint']) || empty($sub['keys']['p256dh']) || empty($sub['keys']['auth'])
@@ -92,30 +121,91 @@ class WebPush
         ) {
             return false;
         }
-        $all = array_values(array_filter(self::subscriptions(), function ($s) use ($sub) {
-            return $s['endpoint'] !== $sub['endpoint'];
-        }));
-        $all[] = [
-            'user_id'  => (int)$user_id,
-            'endpoint' => $sub['endpoint'],
-            'p256dh'   => $sub['keys']['p256dh'],
-            'auth'     => $sub['keys']['auth'],
-            'ua'       => mb_substr((string)$ua, 0, 200),
-            'created'  => date('Y-m-d H:i:s'),
-        ];
-        self::writeJson('push_subscriptions.json', $all);
+        self::changeSubscriptions(function ($all) use ($user_id, $sub, $ua) {
+            $all = array_filter($all, function ($s) use ($sub) {
+                return $s['endpoint'] !== $sub['endpoint'];
+            });
+            $all[] = [
+                'user_id'  => (int)$user_id,
+                'endpoint' => $sub['endpoint'],
+                'p256dh'   => $sub['keys']['p256dh'],
+                'auth'     => $sub['keys']['auth'],
+                'ua'       => mb_substr((string)$ua, 0, 200),
+                'created'  => date('Y-m-d H:i:s'),
+            ];
+            return $all;
+        });
         return true;
     }
 
-    public static function unsubscribe($endpoint)
+    /** Removes a subscription; with $user_id, only if it belongs to that agent. Returns whether one was removed. */
+    public static function unsubscribe($endpoint, $user_id = null)
     {
-        $all = self::subscriptions();
-        $kept = array_values(array_filter($all, function ($s) use ($endpoint) {
-            return $s['endpoint'] !== $endpoint;
-        }));
-        if (count($kept) != count($all)) {
-            self::writeJson('push_subscriptions.json', $kept);
+        $removed = false;
+        self::changeSubscriptions(function ($all) use ($endpoint, $user_id, &$removed) {
+            $kept = array_filter($all, function ($s) use ($endpoint, $user_id) {
+                return $s['endpoint'] !== $endpoint || ($user_id !== null && (int)$s['user_id'] !== (int)$user_id);
+            });
+            $removed = count($kept) != count($all);
+            return $removed ? $kept : null;
+        });
+        return $removed;
+    }
+
+    /** Short id of a device, safe to show in a page (the endpoint is not needed to remove it). */
+    public static function deviceId($endpoint)
+    {
+        return substr(hash('sha256', (string)$endpoint), 0, 16);
+    }
+
+    /** The agent's devices, newest first: id, label ("Chrome · Android"), date added, endpoint (to spot this device). */
+    public static function devices($user_id)
+    {
+        $list = [];
+        foreach (self::subscriptions() as $s) {
+            if ((int)$s['user_id'] === (int)$user_id) {
+                $list[] = [
+                    'id'       => self::deviceId($s['endpoint']),
+                    'label'    => self::describe($s['ua'] ?? ''),
+                    'created'  => !empty($s['created']) ? date('c', strtotime($s['created'])) : null,
+                    'endpoint' => $s['endpoint'],
+                ];
+            }
         }
+        usort($list, function ($a, $b) {
+            return strcmp((string)$b['created'], (string)$a['created']);
+        });
+        return $list;
+    }
+
+    /** Removes one of the agent's devices by its id. */
+    public static function removeDevice($user_id, $id)
+    {
+        foreach (self::subscriptions() as $s) {
+            if ((int)$s['user_id'] === (int)$user_id && hash_equals(self::deviceId($s['endpoint']), (string)$id)) {
+                return self::unsubscribe($s['endpoint'], $user_id);
+            }
+        }
+        return false;
+    }
+
+    /** "Browser · System" from a user agent, for the device list. */
+    public static function describe($ua)
+    {
+        $browsers = ['EdgA?/' => 'Edge', 'SamsungBrowser' => 'Samsung Internet', 'OPR/' => 'Opera', 'Firefox|FxiOS' => 'Firefox',
+            'CriOS|Chrome' => 'Chrome', 'Safari' => 'Safari'];
+        $systems = ['iPhone' => 'iPhone', 'iPad' => 'iPad', 'Android' => 'Android', 'CrOS' => 'ChromeOS', 'Windows' => 'Windows',
+            'Mac OS X|Macintosh' => 'macOS', 'Linux' => 'Linux'];
+        $pick = function ($table) use ($ua) {
+            foreach ($table as $pattern => $name) {
+                if (preg_match('#'.$pattern.'#', (string)$ua)) {
+                    return $name;
+                }
+            }
+            return null;
+        };
+        $parts = array_filter([$pick($browsers), $pick($systems)]);
+        return $parts ? implode(' · ', $parts) : __('webpush::messages.unknown_device');
     }
 
     /* ---------------------------------------------------------------- sending */

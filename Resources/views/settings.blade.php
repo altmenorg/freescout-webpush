@@ -33,6 +33,14 @@
     </div>
 
     <div class="form-group">
+        <label class="col-sm-2 control-label">{{ __('webpush::messages.badge') }}</label>
+        <div class="col-sm-6">
+            <input type="text" name="settings[webpush.badge_url]" value="{{ $settings['webpush.badge_url'] }}" class="form-control input-sized-lg" placeholder="https://…/badge-96.png" />
+            <p class="form-help">{{ __('webpush::messages.badge_help') }}</p>
+        </div>
+    </div>
+
+    <div class="form-group">
         <label class="col-sm-2 control-label">{{ __('webpush::messages.contact') }}</label>
         <div class="col-sm-6">
             <input type="email" name="settings[webpush.push_contact]" value="{{ $settings['webpush.push_contact'] }}" class="form-control input-sized-lg" placeholder="{{ $default_contact }}" />

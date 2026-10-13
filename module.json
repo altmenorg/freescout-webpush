@@ -2,7 +2,7 @@
     "name": "WebPush",
     "alias": "webpush",
     "description": "Install FreeScout as an app on phones and desktops (PWA) and get Web Push notifications, even when it is closed. No mobile app, no third-party relay: notifications are encrypted end to end.",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "detailsUrl": "https://github.com/altmenorg/freescout-webpush",
     "latestVersionUrl": "https://github.com/altmenorg/freescout-webpush/releases/latest/download/module.json",
     "latestVersionZipUrl": "https://github.com/altmenorg/freescout-webpush/releases/latest/download/WebPush.zip",

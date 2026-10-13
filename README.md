@@ -27,7 +27,10 @@ and only the subscribed device can read them.
   (RFC 8291 / 8188), with OpenSSL. No Composer dependency, no external service.
 - One notification per ticket: a new event replaces the previous notification of the same ticket. Tapping it opens the
   ticket.
-- **"Notifications on this device"** box in Profile › Notifications: turn on, turn off, send a test.
+- **"Notifications on this device"** box in Profile › Notifications: turn on, turn off, send a test, and the list of
+  **your devices** (browser and system, date added), each removable from any other one — a lost or replaced phone
+  stops receiving notifications.
+- FreeScout's logo as the **Android status bar icon** (or yours), instead of a grey square.
 - In the installed app, a one-time prompt offers to turn notifications on.
 - English and French.
 
@@ -96,9 +99,11 @@ Once the app is installed, it offers once to turn notifications on; this can als
 |---|---|
 | **App name / Short name** | Name of the installable app, and the one shown under its icon. |
 | **App icon** | Square PNG, 512 px recommended. Empty: FreeScout's icons. |
+| **Status bar icon** | Small Android status bar icon: white shape on a transparent background, PNG, 96 px (only its shape is used). Empty: FreeScout's logo. |
 | **Contact e-mail** | Given to the push services as the sender of the notifications. Empty: the first administrator. |
 
-The server keys are created on first use in `storage/app/webpush/`, next to the list of subscribed devices. Keep this
+The server keys are created on first use in `storage/app/webpush/`, next to the list of subscribed devices (changed
+under a lock, so that devices subscribing or expiring at the same time are never lost). Keep this
 folder when moving servers: new keys would silently cut every existing subscription.
 
 ## For module developers

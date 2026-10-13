@@ -60,6 +60,7 @@ class WebPushServiceProvider extends ServiceProvider
                         'url'   => $conv->url(),
                         'tag'   => 'conv-'.$conv->id,
                         'icon'  => Settings::notificationIcon(),
+                        'badge' => Settings::notificationBadge(),
                     ];
                     foreach ($info['users'] as $user) {
                         WebPush::sendToUser($user->id, $payload);
@@ -74,7 +75,7 @@ class WebPushServiceProvider extends ServiceProvider
     /** Manage › Settings › Web Push: name and icon of the app, contact given to the push services. */
     protected function registerSettings()
     {
-        $keys = ['app_name', 'app_short_name', 'app_icon_url', 'push_contact'];
+        $keys = ['app_name', 'app_short_name', 'app_icon_url', 'badge_url', 'push_contact'];
         \Eventy::addFilter('settings.sections', function ($sections) {
             $sections['webpush'] = ['title' => __('webpush::messages.section'), 'icon' => 'phone', 'order' => 160];
             return $sections;
@@ -179,6 +180,35 @@ class WebPushServiceProvider extends ServiceProvider
                     box.find('.webpush-test').text(<?php echo $t('send_test'); ?>);
                     box.find('.webpush-help').text(<?php echo $t('profile_help'); ?>);
                     form.before(box);
+                    // "Your devices": every device of the agent that receives notifications, the others removable
+                    // from here (a lost or replaced phone keeps its subscription until it is removed)
+                    var devices = $('<div class="webpush-devices"><div class="webpush-devices-title"></div><ul></ul></div>');
+                    devices.find('.webpush-devices-title').text(<?php echo $t('your_devices'); ?>);
+                    box.find('.webpush-help').before(devices);
+                    var lang = document.documentElement.lang || undefined;
+                    var renderDevices = function (sub) {
+                        $.getJSON(<?php echo json_encode(route('webpush.devices')); ?>).done(function (r) {
+                            var ul = devices.find('ul').empty();
+                            var list = (r && r.devices) || [];
+                            if (!list.length) {
+                                ul.append($('<li class="webpush-dev-none"></li>').text(<?php echo $t('no_devices'); ?>));
+                                return;
+                            }
+                            $.each(list, function (i, d) {
+                                var li = $('<li></li>').append($('<span class="webpush-dev-name"></span>').text(d.label));
+                                if (d.created) {
+                                    var day = new Date(d.created).toLocaleDateString(lang, { day: 'numeric', month: 'short', year: 'numeric' });
+                                    li.append($('<span class="webpush-dev-date"></span>').text(<?php echo $t('added_on'); ?>.replace(':date', day)));
+                                }
+                                if (sub && d.endpoint === sub.endpoint) {
+                                    li.addClass('is-this').append($('<span class="webpush-dev-this"></span>').text(<?php echo $t('this_device_tag'); ?>));
+                                } else {
+                                    li.append($('<button type="button" class="btn btn-link webpush-dev-remove"></button>').attr('data-device', d.id).text(<?php echo $t('remove'); ?>));
+                                }
+                                ul.append(li);
+                            });
+                        });
+                    };
                     var refresh = function () {
                         current().then(function (sub) {
                             var denied = Notification.permission === 'denied';
@@ -186,6 +216,7 @@ class WebPushServiceProvider extends ServiceProvider
                             box.toggleClass('is-on', !!sub);
                             box.find('.webpush-on').toggle(!sub && !denied);
                             box.find('.webpush-off, .webpush-test').toggle(!!sub);
+                            renderDevices(sub);
                         });
                     };
                     refresh();
@@ -195,6 +226,12 @@ class WebPushServiceProvider extends ServiceProvider
                             function () { toast('error', <?php echo $t('turn_on_failed'); ?>); refresh(); });
                     });
                     box.on('click', '.webpush-off', function () { disable().then(refresh, refresh); });
+                    box.on('click', '.webpush-dev-remove', function () {
+                        $(this).prop('disabled', true);
+                        $.post(<?php echo json_encode(route('webpush.unsubscribe')); ?>, { _token: csrf(), device: $(this).attr('data-device') })
+                            .done(function () { toast('success', <?php echo $t('device_removed'); ?>); })
+                            .always(refresh);
+                    });
                     box.on('click', '.webpush-test', function () {
                         $.post(<?php echo json_encode(route('webpush.test')); ?>, { _token: csrf() }, function (r) {
                             toast(r.status === 'success' ? 'success' : 'error', r.msg);

@@ -68,12 +68,22 @@ class WebPushController extends Controller
         return response()->json(['status' => 'success']);
     }
 
+    /** Removes one of the agent's own devices: by its endpoint (this device) or its id (the device list). */
     public function unsubscribe(Request $request)
     {
-        if ($request->input('endpoint')) {
-            WebPush::unsubscribe((string)$request->input('endpoint'));
+        $user_id = auth()->user()->id;
+        if ($request->input('device')) {
+            WebPush::removeDevice($user_id, (string)$request->input('device'));
+        } elseif ($request->input('endpoint')) {
+            WebPush::unsubscribe((string)$request->input('endpoint'), $user_id);
         }
         return response()->json(['status' => 'success']);
+    }
+
+    /** The agent's devices (Profile › Notifications). */
+    public function devices()
+    {
+        return response()->json(['devices' => WebPush::devices(auth()->user()->id)]);
     }
 
     public function test()
@@ -84,6 +94,7 @@ class WebPushController extends Controller
             'url'   => '/',
             'tag'   => 'test',
             'icon'  => Settings::notificationIcon(),
+            'badge' => Settings::notificationBadge(),
         ]);
         return response()->json([
             'status' => $n ? 'success' : 'error',
