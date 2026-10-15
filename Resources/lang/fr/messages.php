@@ -12,6 +12,8 @@ return [
     'app_icon_help'        => 'Facultatif. PNG carré, 512 × 512 px, avec une marge autour du dessin. Vide : l\'icône de FreeScout. Les téléphones prennent en compte un changement sous 24 h.',
     'badge'                => 'Icône de la barre d\'état',
     'badge_help'           => 'Facultatif. Petite icône de la barre d\'état d\'Android : forme blanche sur fond transparent, PNG, 96 × 96 px (seule la forme compte). Vide : le logo de FreeScout.',
+    'hide_content'         => 'Masquer le contenu',
+    'hide_content_help'    => 'Les notifications n\'affichent que le numéro du ticket (« #1234 — Nouvelle activité ») : ni sujet, ni nom, ni message, lisibles sur un écran verrouillé.',
     'contact'              => 'Contact e-mail',
     'contact_help'         => 'Transmis aux services de notification (Google, Apple, Mozilla) comme expéditeur des notifications. Vide : le premier administrateur.',
     'save'                 => 'Enregistrer',
@@ -44,4 +46,12 @@ return [
     'test_sent'            => ':count appareil(s) notifié(s)',
     'test_none'            => 'Aucun appareil abonné n\'a accepté la notification',
     'invalid_subscription' => 'Abonnement invalide',
+
+    // diagnostics (settings page)
+    'diagnostics'          => 'Diagnostic',
+    'diagnostics_help'     => 'Pour signaler un bug sur GitHub : versions, réglages renseignés ou non, contrôle de santé, appareils par service de notification, et ce que voit ce navigateur (autorisation, service worker, abonnement). Aucun nom, adresse, agent ni adresse d\'appareil. Relisez-le avant de le joindre à une issue : les issues sont publiques.',
+    'diagnostics_make'     => 'Créer le fichier de diagnostic',
+    'download'             => 'Télécharger',
+    'copy'                 => 'Copier',
+    'copied'               => 'Copié',
 ];

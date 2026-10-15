@@ -12,6 +12,8 @@ return [
     'app_icon_help'        => 'Optional. Square PNG, 512 × 512 px, with a margin around the drawing. Empty: FreeScout\'s icon. Phones pick up a change within a day.',
     'badge'                => 'Status bar icon',
     'badge_help'           => 'Optional. Small icon of the Android status bar: white shape on a transparent background, PNG, 96 × 96 px (only its shape is used). Empty: FreeScout\'s logo.',
+    'hide_content'         => 'Hide the content',
+    'hide_content_help'    => 'Notifications only show the ticket number ("#1234 — New activity"): no subject, name or message readable on a locked screen.',
     'contact'              => 'Contact e-mail',
     'contact_help'         => 'Given to the push services (Google, Apple, Mozilla) as the sender of the notifications. Empty: the first administrator.',
     'save'                 => 'Save',
@@ -44,4 +46,12 @@ return [
     'test_sent'            => ':count device(s) notified',
     'test_none'            => 'No subscribed device accepted the notification',
     'invalid_subscription' => 'Invalid subscription',
+
+    // diagnostics (settings page)
+    'diagnostics'          => 'Diagnostics',
+    'diagnostics_help'     => 'For a bug report on GitHub: versions, which settings are set, the health check, devices by push service, and what this browser sees (permission, service worker, subscription). No name, address, agent or device address. Check it before attaching it to an issue: issues are public.',
+    'diagnostics_make'     => 'Create the diagnostics file',
+    'download'             => 'Download',
+    'copy'                 => 'Copy',
+    'copied'               => 'Copied',
 ];

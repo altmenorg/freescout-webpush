@@ -213,12 +213,31 @@ class WebPush
     /** Sends ['title','body','url','tag'] to all of the agent's devices. Returns the number of accepted sends. */
     public static function sendToUser($user_id, array $payload)
     {
-        $ok = 0;
-        foreach (self::subscriptions() as $sub) {
-            if ((int)$sub['user_id'] !== (int)$user_id) {
-                continue;
+        return self::sendToUsers([[(int)$user_id, $payload]]);
+    }
+
+    /**
+     * Sends several [user_id, payload] at once: every device of every agent in parallel (curl_multi), so that a slow
+     * or silent push service no longer delays the others. Each payload gets the agent's number of open assigned
+     * tickets ("badge_count", the dot on the installed app's icon). Expired subscriptions (404, 410) are dropped.
+     * Returns the number of accepted sends.
+     */
+    public static function sendToUsers(array $items)
+    {
+        $subs = self::subscriptions();
+        $jobs = [];
+        foreach ($items as $item) {
+            list($user_id, $payload) = $item;
+            $payload['badge_count'] = self::badgeCount($user_id);
+            foreach ($subs as $sub) {
+                if ((int)$sub['user_id'] === (int)$user_id) {
+                    $jobs[] = [$sub, $payload, (int)$user_id];
+                }
             }
-            $code = self::send($sub, $payload);
+        }
+        $ok = 0;
+        foreach (self::sendBatch($jobs) as $i => $code) {
+            list($sub, , $user_id) = $jobs[$i];
             if ($code >= 200 && $code < 300) {
                 $ok++;
             } elseif ($code == 404 || $code == 410) {
@@ -234,19 +253,54 @@ class WebPush
     /** Sends encrypted content to a subscription; returns the push service's HTTP code (0 on network/encryption failure). */
     public static function send(array $sub, array $payload)
     {
+        return self::sendBatch([[$sub, $payload]])[0];
+    }
+
+    /** Sends [subscription, payload, …] jobs in parallel; returns their HTTP codes, in the same order (0: not sent). */
+    protected static function sendBatch(array $jobs)
+    {
+        $codes = array_fill(0, count($jobs), 0);
+        $multi = curl_multi_init();
+        $handles = [];
+        foreach ($jobs as $i => $job) {
+            $ch = self::request($job[0], $job[1]);
+            if ($ch) {
+                $handles[$i] = $ch;
+                curl_multi_add_handle($multi, $ch);
+            }
+        }
+        do {
+            $status = curl_multi_exec($multi, $running);
+            if ($running) {
+                curl_multi_select($multi, 1.0);
+            }
+        } while ($running && $status === CURLM_OK);
+        foreach ($handles as $i => $ch) {
+            $codes[$i] = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_multi_remove_handle($multi, $ch);
+            curl_close($ch);
+        }
+        curl_multi_close($multi);
+        return $codes;
+    }
+
+    /** The encrypted, signed request for one subscription, or null (encryption or signature impossible). */
+    protected static function request(array $sub, array $payload)
+    {
         $body = self::encrypt(json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), $sub['p256dh'], $sub['auth']);
         if ($body === null) {
-            return 0;
+            return null;
         }
         $jwt = self::vapidJwt($sub['endpoint']);
         if ($jwt === null) {
-            return 0;
+            return null;
         }
         $ch = curl_init($sub['endpoint']);
         curl_setopt_array($ch, [
             CURLOPT_POST           => true,
             CURLOPT_POSTFIELDS     => $body,
             CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 5,
             CURLOPT_TIMEOUT        => 10,
             CURLOPT_HTTPHEADER     => [
                 'Authorization: vapid t='.$jwt.', k='.self::publicKey(),
@@ -256,10 +310,52 @@ class WebPush
                 'Urgency: high',
             ],
         ]);
-        curl_exec($ch);
-        $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        return $code;
+        return $ch;
+    }
+
+    /** Open tickets assigned to the agent, in the mailboxes they can see: the number on the installed app's icon. */
+    public static function badgeCount($user_id)
+    {
+        try {
+            $user = \App\User::find($user_id);
+            if (!$user) {
+                return 0;
+            }
+            return \App\Conversation::where('user_id', $user->id)
+                ->where('state', \App\Conversation::STATE_PUBLISHED)
+                ->where('status', \App\Conversation::STATUS_ACTIVE)
+                ->whereIn('mailbox_id', $user->mailboxesIdsCanView())
+                ->count();
+        } catch (\Throwable $e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Encryption and signature self-test, without network or writing: encrypts a message for a key pair made on the
+     * spot (as a browser would hold), and signs a VAPID token if the server keys already exist. Null when it works.
+     */
+    public static function selfTest()
+    {
+        $browser = self::newEcKey();
+        if (!$browser) {
+            return 'OpenSSL cannot create P-256 keys';
+        }
+        $body = self::encrypt('{"selftest":true}', self::b64u(self::rawPublic($browser)), self::b64u(random_bytes(16)));
+        if ($body === null || strlen($body) !== 16 + 4 + 1 + 65 + strlen('{"selftest":true}') + 1 + 16) {
+            return 'aes128gcm encryption failed';
+        }
+        if (is_file(storage_path('app/webpush/vapid.json')) && self::vapidJwt('https://push.example.com/selftest') === null) {
+            return 'VAPID signature failed';
+        }
+        return null;
+    }
+
+    /** Path of FreeScout's root ("/", or "/helpdesk/" when installed in a subfolder): scope of the app and its worker. */
+    public static function basePath()
+    {
+        $path = (string)parse_url(url('/'), PHP_URL_PATH);
+        return '/'.trim($path, '/').($path !== '' && trim($path, '/') !== '' ? '/' : '');
     }
 
     /** VAPID ES256 JWT for the push service's origin. */

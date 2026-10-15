@@ -13,6 +13,12 @@ class Settings
         return ($v === null || $v === '') ? $default : $v;
     }
 
+    /** Notifications reduced to the ticket number (no subject, name or message), for locked screens. */
+    public static function hideContent()
+    {
+        return (bool)self::get('hide_content', false);
+    }
+
     /** Name of the installable app. */
     public static function appName()
     {

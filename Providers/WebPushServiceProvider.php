@@ -39,6 +39,8 @@ class WebPushServiceProvider extends ServiceProvider
             if (empty($notify[\App\Subscription::MEDIUM_MOBILE])) {
                 return;
             }
+            // every device of every agent of this event, sent in parallel (WebPush::sendToUsers)
+            $items = [];
             foreach ($notify[\App\Subscription::MEDIUM_MOBILE] as $info) {
                 try {
                     $conv = $info['conversation'];
@@ -62,9 +64,21 @@ class WebPushServiceProvider extends ServiceProvider
                         'icon'  => Settings::notificationIcon(),
                         'badge' => Settings::notificationBadge(),
                     ];
-                    foreach ($info['users'] as $user) {
-                        WebPush::sendToUser($user->id, $payload);
+                    // "Hide the content" (settings): only the ticket number, readable on a locked screen
+                    if (Settings::hideContent()) {
+                        $payload['title'] = '#'.$conv->number;
+                        $payload['body'] = __('webpush::messages.new_activity');
                     }
+                    foreach ($info['users'] as $user) {
+                        $items[] = [$user->id, $payload];
+                    }
+                } catch (\Throwable $e) {
+                    \Log::error('[WebPush] '.$e->getMessage());
+                }
+            }
+            if ($items) {
+                try {
+                    WebPush::sendToUsers($items);
                 } catch (\Throwable $e) {
                     \Log::error('[WebPush] '.$e->getMessage());
                 }
@@ -75,7 +89,7 @@ class WebPushServiceProvider extends ServiceProvider
     /** Manage › Settings › Web Push: name and icon of the app, contact given to the push services. */
     protected function registerSettings()
     {
-        $keys = ['app_name', 'app_short_name', 'app_icon_url', 'badge_url', 'push_contact'];
+        $keys = ['app_name', 'app_short_name', 'app_icon_url', 'badge_url', 'push_contact', 'hide_content'];
         \Eventy::addFilter('settings.sections', function ($sections) {
             $sections['webpush'] = ['title' => __('webpush::messages.section'), 'icon' => 'phone', 'order' => 160];
             return $sections;
@@ -107,6 +121,11 @@ class WebPushServiceProvider extends ServiceProvider
             $styles[] = \Module::getPublicPath('webpush').'/css/webpush.css';
             return $styles;
         });
+        // Diagnostics file (Manage › Settings › Web Push): only acts on that page
+        \Eventy::addFilter('javascripts', function ($scripts) {
+            $scripts[] = \Module::getPublicPath('webpush').'/js/diagnostics.js';
+            return $scripts;
+        });
 
         \Eventy::addAction('javascript', function () {
             if (!auth()->check()) {
@@ -133,8 +152,9 @@ class WebPushServiceProvider extends ServiceProvider
                     for (var i = 0; i < raw.length; i++) { out[i] = raw.charCodeAt(i); }
                     return out;
                 };
-                // same scope "/" as before: an existing registration (and its push subscription) is kept, only its script changes
-                var regP = navigator.serviceWorker.register(<?php echo json_encode(route('webpush.sw')); ?>, { scope: '/' });
+                // scope: FreeScout's root ("/" as before, so an existing registration and its push subscription are
+                // kept; "/helpdesk/" when FreeScout is installed in a subfolder)
+                var regP = navigator.serviceWorker.register(<?php echo json_encode(route('webpush.sw')); ?>, { scope: <?php echo json_encode(WebPush::basePath()); ?> });
                 var current = function () {
                     return regP.then(function (reg) { return reg.pushManager.getSubscription(); });
                 };
@@ -242,6 +262,18 @@ class WebPushServiceProvider extends ServiceProvider
 
                 // App installed (full screen) without notifications: offer once to turn them on
                 var standalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
+
+                // Installed app: its icon shows the agent's open assigned tickets (also updated by each notification)
+                if (standalone && navigator.setAppBadge) {
+                    var badge = function () {
+                        $.getJSON(<?php echo json_encode(route('webpush.badge')); ?>).done(function (r) {
+                            var n = parseInt(r && r.count, 10) || 0;
+                            (n > 0 ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(function () {});
+                        });
+                    };
+                    badge();
+                    document.addEventListener('visibilitychange', function () { if (!document.hidden) { badge(); } });
+                }
                 var asked = false;
                 try { asked = window.localStorage.getItem('webpush_asked') === '1' || window.localStorage.getItem('rf_push_asked') === '1'; } catch (e) {}
                 if (standalone && !asked && Notification.permission === 'default') {
@@ -267,6 +299,8 @@ class WebPushServiceProvider extends ServiceProvider
 
     public function register()
     {
+        // php artisan webpush:health (Services\Health)
+        $this->commands([\Modules\WebPush\Console\Health::class]);
     }
 
     public function provides()

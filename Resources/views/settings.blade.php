@@ -41,6 +41,21 @@
     </div>
 
     <div class="form-group">
+        <label for="webpush_hide_content" class="col-sm-2 control-label">{{ __('webpush::messages.hide_content') }}</label>
+        <div class="col-sm-6">
+            <div class="controls">
+                <div class="onoffswitch-wrap">
+                    <div class="onoffswitch">
+                        <input type="checkbox" name="settings[webpush.hide_content]" value="1" id="webpush_hide_content" class="onoffswitch-checkbox" @if ($settings['webpush.hide_content'])checked="checked"@endif >
+                        <label class="onoffswitch-label" for="webpush_hide_content"></label>
+                    </div>
+                </div>
+            </div>
+            <p class="form-help">{{ __('webpush::messages.hide_content_help') }}</p>
+        </div>
+    </div>
+
+    <div class="form-group">
         <label class="col-sm-2 control-label">{{ __('webpush::messages.contact') }}</label>
         <div class="col-sm-6">
             <input type="email" name="settings[webpush.push_contact]" value="{{ $settings['webpush.push_contact'] }}" class="form-control input-sized-lg" placeholder="{{ $default_contact }}" />
@@ -54,3 +69,22 @@
         </div>
     </div>
 </form>
+
+<div id="webpush-diag" class="form-horizontal margin-bottom" data-url="{{ route('webpush.diagnostics') }}">
+    <h3 class="subheader">{{ __('webpush::messages.diagnostics') }}</h3>
+    <div class="form-group">
+        <div class="col-sm-6 col-sm-offset-2">
+            <p class="form-help">{{ __('webpush::messages.diagnostics_help') }}</p>
+        </div>
+    </div>
+    <div class="form-group margin-top">
+        <div class="col-sm-6 col-sm-offset-2">
+            <button type="button" class="btn btn-default webpush-diag-make">{{ __('webpush::messages.diagnostics_make') }}</button>
+            <div class="webpush-diag-out" style="display:none">
+                <pre class="webpush-diag-pre" style="max-height:420px;overflow:auto;margin:12px 0;font-size:12px;white-space:pre-wrap;word-break:break-word"></pre>
+                <button type="button" class="btn btn-primary webpush-diag-download">{{ __('webpush::messages.download') }}</button>
+                <button type="button" class="btn btn-default webpush-diag-copy" data-copied="{{ __('webpush::messages.copied') }}">{{ __('webpush::messages.copy') }}</button>
+            </div>
+        </div>
+    </div>
+</div>

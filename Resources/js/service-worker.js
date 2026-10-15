@@ -18,19 +18,23 @@ self.addEventListener('push', function (event) {
     } catch (e) {
         data = { body: event.data ? event.data.text() : '' };
     }
+    // number on the installed app's icon: the agent's open assigned tickets, sent with each notification
+    if (typeof data.badge_count === 'number' && self.navigator && self.navigator.setAppBadge) {
+        (data.badge_count > 0 ? self.navigator.setAppBadge(data.badge_count) : self.navigator.clearAppBadge()).catch(function () {});
+    }
     event.waitUntil(self.registration.showNotification(data.title || 'FreeScout', {
         body: data.body || '',
         icon: data.icon || undefined,
         badge: data.badge || undefined,
         tag: data.tag || undefined,       // one notification per ticket: the next one replaces it
         renotify: !!data.tag,
-        data: { url: data.url || '/' }
+        data: { url: data.url || self.registration.scope }
     }));
 });
 
 self.addEventListener('notificationclick', function (event) {
     event.notification.close();
-    var url = (event.notification.data && event.notification.data.url) || '/';
+    var url = (event.notification.data && event.notification.data.url) || self.registration.scope;
     event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (list) {
         for (var i = 0; i < list.length; i++) {
             var c = list[i];

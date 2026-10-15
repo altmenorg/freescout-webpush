@@ -5,6 +5,8 @@ namespace Modules\WebPush\Http\Controllers;
 use App\Subscription;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Modules\WebPush\Services\Diagnostics;
+use Modules\WebPush\Services\Health;
 use Modules\WebPush\Services\Settings;
 use Modules\WebPush\Services\WebPush;
 
@@ -17,13 +19,14 @@ class WebPushController extends Controller
     /** Manifest served by a route (FreeScout's own site.webmanifest has no name, so the site is not installable). */
     public function manifest()
     {
+        $base = WebPush::basePath(); // "/", or "/helpdesk/" when FreeScout is installed in a subfolder
         return response()->json([
-            'id'               => '/',
+            'id'               => $base,
             'name'             => Settings::appName(),
             'short_name'       => Settings::appShortName(),
             'lang'             => app()->getLocale(),
-            'start_url'        => '/',
-            'scope'            => '/',
+            'start_url'        => $base,
+            'scope'            => $base,
             'display'          => 'standalone',
             'orientation'      => 'portrait',
             'background_color' => '#ffffff',
@@ -40,7 +43,7 @@ class WebPushController extends Controller
     {
         return response(file_get_contents(__DIR__.'/../../Resources/js/service-worker.js'), 200, [
             'Content-Type'           => 'application/javascript; charset=utf-8',
-            'Service-Worker-Allowed' => '/',  // allows the scope "/" although the script is under /webpush/
+            'Service-Worker-Allowed' => WebPush::basePath(),  // allows FreeScout's root as scope although the script is under /webpush/
             'Cache-Control'          => 'no-cache',
         ]);
     }
@@ -80,6 +83,12 @@ class WebPushController extends Controller
         return response()->json(['status' => 'success']);
     }
 
+    /** Number shown on the installed app's icon: the agent's open assigned tickets. */
+    public function badge()
+    {
+        return response()->json(['count' => WebPush::badgeCount(auth()->user()->id)])->header('Cache-Control', 'no-store');
+    }
+
     /** The agent's devices (Profile › Notifications). */
     public function devices()
     {
@@ -91,7 +100,7 @@ class WebPushController extends Controller
         $n = WebPush::sendToUser(auth()->user()->id, [
             'title' => Settings::appName(),
             'body'  => __('webpush::messages.test_body'),
-            'url'   => '/',
+            'url'   => url('/'),
             'tag'   => 'test',
             'icon'  => Settings::notificationIcon(),
             'badge' => Settings::notificationBadge(),
@@ -101,5 +110,20 @@ class WebPushController extends Controller
             'sent'   => $n,
             'msg'    => $n ? __('webpush::messages.test_sent', ['count' => $n]) : __('webpush::messages.test_none'),
         ]);
+    }
+
+    /** Health check (Services\Health): 200 when healthy, 503 otherwise. Admins only. */
+    public function health()
+    {
+        $report = Health::check();
+        return response()->json($report, $report['ok'] ? 200 : 503, [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+            ->header('Cache-Control', 'no-store');
+    }
+
+    /** Server part of the diagnostics file (Manage › Settings › Web Push); the page adds what the browser sees. Admins only. */
+    public function diagnostics()
+    {
+        return response()->json(Diagnostics::report(), 200, [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+            ->header('Cache-Control', 'no-store');
     }
 }

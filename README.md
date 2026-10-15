@@ -31,6 +31,11 @@ and only the subscribed device can read them.
   **your devices** (browser and system, date added), each removable from any other one — a lost or replaced phone
   stops receiving notifications.
 - FreeScout's logo as the **Android status bar icon** (or yours), instead of a grey square.
+- **Hide the content** (setting): notifications only show the ticket number, nothing readable on a locked screen.
+- **Badge on the installed app's icon**: the agent's open assigned tickets, updated by each notification and when the
+  app is opened (browsers that support it: Chrome and Edge on desktop, Safari on iPhone).
+- Devices are notified **in parallel**: a slow push service doesn't delay the others.
+- Works when FreeScout is installed in a **subfolder** (`https://example.com/helpdesk/`).
 - In the installed app, a one-time prompt offers to turn notifications on.
 - English and French.
 
@@ -100,6 +105,7 @@ Once the app is installed, it offers once to turn notifications on; this can als
 | **App name / Short name** | Name of the installable app, and the one shown under its icon. |
 | **App icon** | Square PNG, 512 px recommended. Empty: FreeScout's icons. |
 | **Status bar icon** | Small Android status bar icon: white shape on a transparent background, PNG, 96 px (only its shape is used). Empty: FreeScout's logo. |
+| **Hide the content** | Notifications only show the ticket number ("#1234 — New activity"): no subject, name or message. |
 | **Contact e-mail** | Given to the push services as the sender of the notifications. Empty: the first administrator. |
 
 The server keys are created on first use in `storage/app/webpush/`, next to the list of subscribed devices (changed
@@ -112,6 +118,24 @@ Everything the module adds is prefixed `webpush` (routes, options, CSS classes, 
 of a logged-in agent, `window.webpush` exposes three promise-returning functions: `current()` (the device's push
 subscription, or `null`), `enable()` and `disable()`. The profile box and the prompt use the `webpush-*` classes and can
 be restyled.
+
+## Reporting a bug
+
+Open an [issue](https://github.com/altmenorg/freescout-webpush/issues/new/choose) and attach a **diagnostics file**: as
+an admin, **Manage › Settings › Web Push › Diagnostics › Create the diagnostics file**, then **Download** — ideally from
+the device or browser where notifications don't arrive. It holds versions, which settings are set, the health check,
+devices counted by push service and what that browser sees (permission, service worker, subscription); no name,
+address, agent or device address, and log lines are redacted. It is shown before you download it: check it, issues are
+public.
+
+## For updaters
+
+- **Checksums**: each release has a `SHA256SUMS` asset with the SHA-256 of `WebPush.zip` and `module.json`.
+- **Health check**, to run after replacing the module (and roll back if it fails). Read-only, no network:
+  `php artisan webpush:health` (`--json` for the report; exit code `0` when healthy, `1` otherwise), or
+  `GET /webpush/health` (admins only, HTTP `200` or `503`). It checks the module's files, classes, views and routes,
+  that FreeScout serves its assets, the PHP extensions, the storage folder and server keys, and runs an encryption and
+  signature self-test.
 
 ## Other modules from the Refresh project
 
