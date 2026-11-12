@@ -64,6 +64,9 @@ and only the subscribed device can read them.
 - **Hide the content** (setting): notifications only show the ticket number, nothing readable on a locked screen.
 - **Badge on the installed app's icon**: the agent's open assigned tickets, updated by each notification and when the
   app is opened (browsers that support it: Chrome and Edge on desktop, Safari on iPhone).
+- **An offline page** in the installed app: when FreeScout cannot be reached, a clear "No connection" page instead of the
+  browser's error, which loads the page by itself when the connection is back. It is the only page the service worker
+  keeps; everything else still comes from the network.
 - Devices are notified **in parallel**: a slow push service doesn't delay the others.
 - Works when FreeScout is installed in a **subfolder** (`https://example.com/helpdesk/`).
 - In the installed app, a one-time prompt offers to turn notifications on.

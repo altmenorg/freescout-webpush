@@ -4,8 +4,14 @@
    when the app and the browser are closed (the push service wakes it up), runs their buttons, and renews the
    subscription when the browser replaces it. */
 
-self.addEventListener('install', function () {
+/* The page shown when FreeScout cannot load (no network): the only page kept in the cache. */
+var OFFLINE_CACHE = 'webpush-offline-v1';
+
+self.addEventListener('install', function (event) {
     self.skipWaiting();
+    event.waitUntil(caches.open(OFFLINE_CACHE).then(function (cache) {
+        return cache.add(new Request(moduleUrl('offline'), { credentials: 'omit' }));
+    }).catch(function () {}));
 });
 
 self.addEventListener('activate', function (event) {
@@ -15,11 +21,21 @@ self.addEventListener('activate', function (event) {
 /* "Share" menu of the phone (share_target of the manifest): the shared files and text arrive as a POST, which has no
    CSRF token and must not leave the phone before the agent chooses where they go. They are kept in this browser's
    cache ("webpush-share") and the share page (GET) is opened; it sends them to a ticket, or to the new-ticket form.
-   Every other request goes to the network as before: nothing else is cached. */
+   Every other request goes to the network as before: nothing else is cached but the offline page. */
 var SHARE_CACHE = 'webpush-share';
 
 self.addEventListener('fetch', function (event) {
     var req = event.request;
+    // A page of FreeScout that cannot load (no network): the offline page instead of the browser's error. Only
+    // navigations: the requests of a page that did load go to the network as before.
+    if (req.mode === 'navigate' && req.method === 'GET') {
+        event.respondWith(fetch(req).catch(function () {
+            return caches.match(moduleUrl('offline'), { cacheName: OFFLINE_CACHE }).then(function (page) {
+                return page || Response.error();
+            });
+        }));
+        return;
+    }
     if (req.method !== 'POST' || !/\/webpush\/share$/.test(new URL(req.url).pathname)) {
         return;
     }

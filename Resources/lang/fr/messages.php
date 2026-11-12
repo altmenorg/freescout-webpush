@@ -50,6 +50,11 @@ return [
     'action_reply'         => 'Répondre',
     'action_failed'        => 'Impossible depuis la notification : touchez-la pour ouvrir le ticket.',
 
+    // page hors connexion de l'app installée
+    'offline_title'        => 'Pas de connexion',
+    'offline_text'         => 'Impossible de joindre FreeScout. La page se chargera toute seule au retour de la connexion.',
+    'offline_retry'        => 'Réessayer',
+
     // alertes de délai (SLA)
     'sla_minutes'          => 'Alertes de délai',
     'sla_minutes_help'     => 'Minutes avant qu\'un ticket ouvert dépasse son objectif (première réponse en :first h, résolution en :resolution h, réglés dans Refresh) : l\'agent assigné est prévenu, ou les agents de la boîte quand personne ne l\'est. 0 les désactive. Vide : 30.',

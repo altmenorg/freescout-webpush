@@ -36,4 +36,6 @@ Route::group(['prefix' => \Helper::getSubdirectory(), 'namespace' => 'Modules\We
     // What was shared normally never gets here: the service worker keeps it on the phone. Without the worker (not
     // installed yet), the share page opens, empty.
     Route::post('/webpush/share', 'WebPushController@shareFallback')->name('webpush.share.fallback');
+    // The page the service worker shows when FreeScout cannot load (kept in its cache, see offline())
+    Route::get('/webpush/offline', 'WebPushController@offline')->name('webpush.offline');
 });

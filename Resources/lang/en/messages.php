@@ -50,6 +50,11 @@ return [
     'action_reply'         => 'Reply',
     'action_failed'        => 'Could not do it from the notification: tap to open the ticket.',
 
+    // offline page of the installed app
+    'offline_title'        => 'No connection',
+    'offline_text'         => 'FreeScout could not be reached. The page will load by itself when the connection is back.',
+    'offline_retry'        => 'Try again',
+
     // SLA alerts
     'sla_minutes'          => 'SLA alerts',
     'sla_minutes_help'     => 'Minutes before an open ticket misses its target (first response in :first h, resolution in :resolution h, set in Refresh): the assignee is notified, or the agents of the mailbox when nobody is. 0 turns them off. Empty: 30.',

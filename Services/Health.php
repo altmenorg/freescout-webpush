@@ -15,7 +15,7 @@ class Health
         \Modules\WebPush\Http\Controllers\WebPushController::class,
     ];
 
-    const VIEWS = ['webpush::settings', 'webpush::share'];
+    const VIEWS = ['webpush::settings', 'webpush::share', 'webpush::offline'];
 
     /** Served through FreeScout's public/modules/webpush link. */
     const ASSETS = ['css/webpush.css', 'js/diagnostics.js', 'img/badge.png'];
@@ -23,7 +23,7 @@ class Health
     const ROUTES = ['webpush.manifest', 'webpush.sw', 'webpush.key', 'webpush.subscribe', 'webpush.unsubscribe',
         'webpush.devices', 'webpush.badge', 'webpush.test', 'webpush.health', 'webpush.diagnostics', 'webpush.go',
         'webpush.action', 'webpush.resubscribe', 'webpush.share', 'webpush.share.note', 'webpush.share.fallback',
-        'webpush.quiet'];
+        'webpush.quiet', 'webpush.offline'];
 
     public static function check()
     {

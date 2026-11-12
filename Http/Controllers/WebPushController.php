@@ -195,6 +195,16 @@ class WebPushController extends Controller
             'quiet' => \Modules\WebPush\Services\QuietHours::set(auth()->user()->id, $request->all())]);
     }
 
+    /**
+     * Page shown by the service worker when a page of FreeScout cannot load (no network). The worker keeps it in its
+     * cache when it installs. Standalone (no layout, no session), in the app's language.
+     */
+    public function offline()
+    {
+        return response()->view('webpush::offline', ['app_name' => Settings::appName()])
+            ->header('Cache-Control', 'no-cache');
+    }
+
     /** POST of the "Share" menu without the service worker: nothing to keep, the share page says so. */
     public function shareFallback()
     {
