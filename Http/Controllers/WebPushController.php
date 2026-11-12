@@ -94,8 +94,8 @@ class WebPushController extends Controller
     }
 
     /**
-     * Button of a notification (service worker, no session): "Assign to me" or "Close" on that ticket, for the agent
-     * the token was signed for, with the same rights as in the ticket itself. Answers with the agent's new badge count.
+     * "Assign to me" button of a notification (service worker, no session): assigns that ticket to the agent the token
+     * was signed for, with the same rights as in the ticket itself. Answers with the agent's new badge count.
      */
     public function action(Request $request)
     {
@@ -111,19 +111,14 @@ class WebPushController extends Controller
         // the agent for this request only (no session): what reacts to the change (history, notifications, other
         // modules) sees who did it, as when it is done from the ticket
         \Auth::setUser($user);
-        if ($data['a'] === 'assign') {
-            if (!$conversation->mailbox->userHasAccess($user->id)) {
-                return response()->json(['status' => 'error'], 403);
-            }
-            if ((int)$conversation->user_id !== (int)$user->id) {
-                $conversation->changeUser($user->id, $user);
-            }
-        } elseif ($data['a'] === 'close') {
-            if ((int)$conversation->status !== \App\Conversation::STATUS_CLOSED) {
-                $conversation->changeStatus(\App\Conversation::STATUS_CLOSED, $user);
-            }
-        } else {
+        if ($data['a'] !== 'assign') {
             return response()->json(['status' => 'error'], 400);
+        }
+        if (!$conversation->mailbox->userHasAccess($user->id)) {
+            return response()->json(['status' => 'error'], 403);
+        }
+        if ((int)$conversation->user_id !== (int)$user->id) {
+            $conversation->changeUser($user->id, $user);
         }
         return response()->json(['status' => 'success', 'badge_count' => WebPush::badgeCount($user->id)]);
     }

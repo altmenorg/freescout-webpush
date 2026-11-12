@@ -87,24 +87,24 @@ class WebPushServiceProvider extends ServiceProvider
     }
 
     /**
-     * Buttons of a notification, for this agent (two at most, Chrome's limit): "Assign to me" when the ticket is not
-     * theirs, "Close" when it is not closed. Each carries a token signed for this agent, this ticket and this action,
-     * which the service worker sends back (it has no session). Phones that do not show buttons (iPhone) just open the
-     * ticket.
+     * Buttons of a notification, for this agent, when the ticket is not theirs: "Assign to me", and "Dismiss", which
+     * only closes the notification. Nothing more drastic: closing a ticket from a notification, without reading it,
+     * is too easy a mistake. "Assign to me" carries a token signed for this agent, this ticket and this action, which
+     * the service worker sends back (it has no session). Phones that do not show buttons (iPhone) just open the ticket.
      */
     public static function buttons($conv, $user)
     {
-        $actions = [];
-        if ((int)$conv->user_id !== (int)$user->id) {
-            $actions[] = ['action' => 'assign', 'title' => __('webpush::messages.action_assign')];
+        if ((int)$conv->user_id === (int)$user->id) {
+            return [];
         }
-        if ((int)$conv->status !== \App\Conversation::STATUS_CLOSED) {
-            $actions[] = ['action' => 'close', 'title' => __('webpush::messages.action_close')];
-        }
-        foreach ($actions as $i => $a) {
-            $actions[$i]['token'] = WebPush::actionToken($user->id, $conv->id, $a['action']);
-        }
-        return $actions ? ['actions' => $actions, 'failed' => __('webpush::messages.action_failed')] : [];
+        return [
+            'actions' => [
+                ['action' => 'assign', 'title' => __('webpush::messages.action_assign'),
+                    'token' => WebPush::actionToken($user->id, $conv->id, 'assign')],
+                ['action' => 'dismiss', 'title' => __('webpush::messages.action_dismiss')],
+            ],
+            'failed' => __('webpush::messages.action_failed'),
+        ];
     }
 
     /** Manage › Settings › Web Push: name and icon of the app, contact given to the push services. */

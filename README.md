@@ -27,9 +27,10 @@ and only the subscribed device can read them.
   (RFC 8291 / 8188), with OpenSSL. No Composer dependency, no external service.
 - One notification per ticket: a new event replaces the previous notification of the same ticket. Tapping it opens the
   ticket.
-- **Buttons in the notification**: **Assign to me** (when the ticket is not yours) and **Close ticket** (when it is not
-  closed), done in the background without opening the app, with the same rights as in the ticket. Each button carries a
-  token signed for that agent, that ticket and that action, valid a week. Chrome, Edge and Firefox on Android and
+- **Buttons in the notification**, for a ticket that is not yours: **Assign to me**, done in the background without
+  opening the app, with the same rights as in the ticket (the button carries a token signed for that agent, that ticket
+  and that action, valid a week), and **Dismiss**, which only closes the notification. Nothing more drastic: closing a
+  ticket from a notification, without reading it, is too easy a mistake. Chrome, Edge and Firefox on Android and
   desktops; iPhones don't show notification buttons, tapping opens the ticket.
 - **Shortcuts on the app's icon** (long press on Android, right click on Windows and macOS): **My tickets**,
   **Unassigned**, **New ticket**, **Search**. With several mailboxes, they go to the first one with tickets in that

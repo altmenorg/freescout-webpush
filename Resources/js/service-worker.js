@@ -33,7 +33,7 @@ self.addEventListener('push', function (event) {
     }
     // number on the installed app's icon: the agent's open assigned tickets, sent with each notification
     setBadge(data.badge_count);
-    // buttons ("Assign to me", "Close"): each with a token signed for this agent, this ticket and this action
+    // buttons: "Assign to me", with a token signed for this agent, this ticket and this action, and "Dismiss"
     var actions = (data.actions || []).map(function (a) { return { action: a.action, title: a.title }; });
     event.waitUntil(self.registration.showNotification(data.title || 'FreeScout', {
         body: data.body || '',
@@ -68,6 +68,9 @@ self.addEventListener('notificationclick', function (event) {
     if (!button) {
         event.waitUntil(openUrl(url));
         return;
+    }
+    if (!button.token) {
+        return;                           // "Dismiss": the notification is closed, nothing else
     }
     // A button: done in the background, the app is not opened. When it fails (rights changed, token too old, no
     // network), a notification says so and opens the ticket.
