@@ -47,7 +47,7 @@ return [
     'test_none'            => 'No subscribed device accepted the notification',
     'invalid_subscription' => 'Invalid subscription',
     'action_assign'        => 'Assign to me',
-    'action_close'         => 'Close',
+    'action_close'         => 'Close ticket',
     'action_failed'        => 'Could not do it from the notification: tap to open the ticket.',
 
     // shortcuts of the installed app (long press on its icon)

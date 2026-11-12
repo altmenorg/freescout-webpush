@@ -47,7 +47,7 @@ return [
     'test_none'            => 'Aucun appareil abonné n\'a accepté la notification',
     'invalid_subscription' => 'Abonnement invalide',
     'action_assign'        => 'M\'assigner',
-    'action_close'         => 'Fermer',
+    'action_close'         => 'Fermer le ticket',
     'action_failed'        => 'Impossible depuis la notification : touchez-la pour ouvrir le ticket.',
 
     // raccourcis de l'app installée (appui long sur son icône)

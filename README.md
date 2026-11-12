@@ -27,7 +27,7 @@ and only the subscribed device can read them.
   (RFC 8291 / 8188), with OpenSSL. No Composer dependency, no external service.
 - One notification per ticket: a new event replaces the previous notification of the same ticket. Tapping it opens the
   ticket.
-- **Buttons in the notification**: **Assign to me** (when the ticket is not yours) and **Close** (when it is not
+- **Buttons in the notification**: **Assign to me** (when the ticket is not yours) and **Close ticket** (when it is not
   closed), done in the background without opening the app, with the same rights as in the ticket. Each button carries a
   token signed for that agent, that ticket and that action, valid a week. Chrome, Edge and Firefox on Android and
   desktops; iPhones don't show notification buttons, tapping opens the ticket.
