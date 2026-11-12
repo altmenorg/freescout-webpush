@@ -132,7 +132,8 @@ class WebPushServiceProvider extends ServiceProvider
             }
             if ($thread && $thread->has_attachments) {
                 foreach ($thread->attachments as $attachment) {
-                    if (!$attachment->embedded && strpos((string)$attachment->mime_type, 'image/') === 0
+                    // formats a notification can show (not HEIC, which iPhones send and browsers don't read)
+                    if (!$attachment->embedded && in_array(strtolower((string)$attachment->mime_type), ['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
                         && (int)$attachment->size > 0 && (int)$attachment->size < 5 * 1024 * 1024
                     ) {
                         $rich['image'] = $attachment->url();
