@@ -14,7 +14,11 @@ class QuietHours
 
     public static function get($user_id)
     {
-        $saved = json_decode((string)\Option::get('webpush.quiet.'.(int)$user_id, ''), true);
+        // Option::get() decodes JSON values itself; a string is decoded here
+        $saved = \Option::get('webpush.quiet.'.(int)$user_id, '');
+        if (!is_array($saved)) {
+            $saved = json_decode((string)$saved, true);
+        }
         return array_merge(self::DEFAULTS, is_array($saved) ? array_intersect_key($saved, self::DEFAULTS) : []);
     }
 
