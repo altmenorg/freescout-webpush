@@ -26,6 +26,7 @@ class WebPushServiceProvider extends ServiceProvider
         $this->loadRoutesFrom(__DIR__.'/../Http/routes.php');
         Settings::migrateFromRefresh();
         $this->registerNotifications();
+        $this->registerSchedule();
         $this->registerSettings();
         $this->registerAssets();
     }
@@ -147,10 +148,19 @@ class WebPushServiceProvider extends ServiceProvider
         return $rich;
     }
 
+    /** SLA alerts (Services\Sla), every five minutes through FreeScout's scheduler (schedule filter). */
+    protected function registerSchedule()
+    {
+        \Eventy::addFilter('schedule', function ($schedule) {
+            $schedule->command('webpush:sla')->everyFiveMinutes()->withoutOverlapping(10);
+            return $schedule;
+        });
+    }
+
     /** Manage › Settings › Web Push: name and icon of the app, contact given to the push services. */
     protected function registerSettings()
     {
-        $keys = ['app_name', 'app_short_name', 'app_icon_url', 'badge_url', 'push_contact', 'hide_content'];
+        $keys = ['app_name', 'app_short_name', 'app_icon_url', 'badge_url', 'push_contact', 'hide_content', 'sla_minutes'];
         \Eventy::addFilter('settings.sections', function ($sections) {
             $sections['webpush'] = ['title' => __('webpush::messages.section'), 'icon' => 'phone', 'order' => 160];
             return $sections;
@@ -168,7 +178,10 @@ class WebPushServiceProvider extends ServiceProvider
             if ($section != 'webpush') {
                 return $params;
             }
-            return ['template_vars' => ['default_contact' => preg_replace('/^mailto:/', '', Settings::pushContact())]];
+            return ['template_vars' => [
+                'default_contact' => preg_replace('/^mailto:/', '', Settings::pushContact()),
+                'sla_targets'     => \Modules\WebPush\Services\Sla::targets(),
+            ]];
         }, 20, 2);
         \Eventy::addFilter('settings.view', function ($view, $section) {
             return $section == 'webpush' ? 'webpush::settings' : $view;
@@ -522,7 +535,7 @@ class WebPushServiceProvider extends ServiceProvider
     public function register()
     {
         // php artisan webpush:health (Services\Health)
-        $this->commands([\Modules\WebPush\Console\Health::class]);
+        $this->commands([\Modules\WebPush\Console\Health::class, \Modules\WebPush\Console\Sla::class]);
     }
 
     public function provides()

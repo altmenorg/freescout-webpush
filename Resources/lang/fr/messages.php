@@ -50,6 +50,12 @@ return [
     'action_reply'         => 'Répondre',
     'action_failed'        => 'Impossible depuis la notification : touchez-la pour ouvrir le ticket.',
 
+    // alertes de délai (SLA)
+    'sla_minutes'          => 'Alertes de délai',
+    'sla_minutes_help'     => 'Minutes avant qu\'un ticket ouvert dépasse son objectif (première réponse en :first h, résolution en :resolution h, réglés dans Refresh) : l\'agent assigné est prévenu, ou les agents de la boîte quand personne ne l\'est. 0 les désactive. Vide : 30.',
+    'sla_first'            => 'Première réponse attendue dans :minutes min',
+    'sla_resolution'       => 'Résolution attendue dans :minutes min',
+
     // heures calmes (Profil › Notifications)
     'quiet_title'          => 'Heures calmes : pas de notifications de',
     'quiet_to'             => 'à',

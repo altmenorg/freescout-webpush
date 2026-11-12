@@ -11,7 +11,7 @@ namespace Modules\WebPush\Services;
 class Health
 {
     const CLASSES = [
-        Settings::class, WebPush::class, Diagnostics::class, QuietHours::class,
+        Settings::class, WebPush::class, Diagnostics::class, QuietHours::class, Sla::class,
         \Modules\WebPush\Http\Controllers\WebPushController::class,
     ];
 

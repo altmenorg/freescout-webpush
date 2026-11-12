@@ -50,6 +50,12 @@ return [
     'action_reply'         => 'Reply',
     'action_failed'        => 'Could not do it from the notification: tap to open the ticket.',
 
+    // SLA alerts
+    'sla_minutes'          => 'SLA alerts',
+    'sla_minutes_help'     => 'Minutes before an open ticket misses its target (first response in :first h, resolution in :resolution h, set in Refresh): the assignee is notified, or the agents of the mailbox when nobody is. 0 turns them off. Empty: 30.',
+    'sla_first'            => 'First response due in :minutes min',
+    'sla_resolution'       => 'Resolution due in :minutes min',
+
     // quiet hours (Profile › Notifications)
     'quiet_title'          => 'Quiet hours: no notifications from',
     'quiet_to'             => 'to',

@@ -46,6 +46,11 @@ and only the subscribed device can read them.
 - **Notifications you can read at a glance**: the photo of who wrote (the customer's, or the agent's) instead of the
   app's icon, the time the message was written, and the first picture attached to it, shown large on Android and
   Windows. With **Hide the content** on, none of them.
+- **SLA alerts**, with the [Refresh](https://github.com/altmenorg/freescout-refresh) module (or any module giving SLA
+  targets through fs-interop): a notification 30 minutes (Manage › Settings › Web Push) before an open ticket misses its
+  first-response or resolution target, to the assignee, or to the agents of the mailbox when nobody is assigned. Once per
+  target; a target already missed is not notified. Checked every five minutes by FreeScout's scheduler
+  (`php artisan webpush:sla`).
 - **Quiet hours**, per agent, in Profile › Notifications: no notifications from one time to another (overnight
   ranges work), and optionally all weekend, in the agent's own time zone. With the Refresh module, urgent tickets can
   still notify. The "Send a test" button ignores them.

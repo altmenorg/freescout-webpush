@@ -55,6 +55,16 @@
         </div>
     </div>
 
+    @if (!empty($sla_targets))
+        <div class="form-group">
+            <label class="col-sm-2 control-label">{{ __('webpush::messages.sla_minutes') }}</label>
+            <div class="col-sm-6">
+                <input type="number" min="0" max="1440" step="5" name="settings[webpush.sla_minutes]" value="{{ $settings['webpush.sla_minutes'] }}" class="form-control input-sized" placeholder="30" />
+                <p class="form-help">{{ __('webpush::messages.sla_minutes_help', ['first' => $sla_targets['first_response_hours'], 'resolution' => $sla_targets['resolution_hours']]) }}</p>
+            </div>
+        </div>
+    @endif
+
     <div class="form-group">
         <label class="col-sm-2 control-label">{{ __('webpush::messages.contact') }}</label>
         <div class="col-sm-6">
