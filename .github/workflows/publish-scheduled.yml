@@ -1,0 +1,49 @@
+# Publishes the draft releases whose date has come.
+#
+# A release prepared in advance is a draft (FreeScout's updater only sees the latest published release), with a line
+# in its notes, kept out of the rendered page by an HTML comment:
+#
+#   <!-- publish-on: 2026-11-19 -->
+#
+# Every morning, each draft whose date is today or past is published, oldest version first, and the last one becomes
+# "latest". The draft's tag is created at the commit it targets, so a version holds only what it was prepared with.
+# Run it by hand (Actions > Publish scheduled releases > Run workflow) to publish what is due right away.
+
+name: Publish scheduled releases
+
+on:
+  schedule:
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish the drafts that are due
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          today=$(date -u +%F)
+          due=$(gh api "repos/$REPO/releases?per_page=100" --jq '
+            [.[] | select(.draft)
+                 | {tag: .tag_name, date: ((.body // "") | capture("publish-on: *(?<d>[0-9]{4}-[0-9]{2}-[0-9]{2})").d // "")}
+                 | select(.date != "")]
+            | sort_by(.tag | ltrimstr("v") | split(".") | map(tonumber))
+            | .[] | "\(.date) \(.tag)"')
+          if [ -z "$due" ]; then
+            echo "No scheduled draft."
+            exit 0
+          fi
+          echo "$due" | while read -r date tag; do
+            if [[ "$date" > "$today" ]]; then
+              echo "$tag: scheduled for $date"
+              continue
+            fi
+            echo "$tag: due on $date, publishing"
+            gh release edit "$tag" --repo "$REPO" --draft=false --latest
+          done
