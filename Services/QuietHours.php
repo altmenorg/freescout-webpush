@@ -30,7 +30,10 @@ class QuietHours
             'weekend' => !empty($data['weekend']),
             'urgent'  => !empty($data['urgent']),
         ];
-        \Option::set('webpush.quiet.'.(int)$user_id, json_encode($value));
+        $key = 'webpush.quiet.'.(int)$user_id;
+        \Option::set($key, json_encode($value));
+        // Option::set() leaves Option's cache as it was: a get() later in the same request would read the old value
+        unset(\Option::$cache[$key]);
         return $value;
     }
 
