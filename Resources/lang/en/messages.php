@@ -50,6 +50,19 @@ return [
     'action_reply'         => 'Reply',
     'action_failed'        => 'Could not do it from the notification: tap to open the ticket.',
 
+    // "Share" menu of the phone
+    'share_title'          => 'Share to FreeScout',
+    'share_nothing'        => 'Nothing to share: use the Share menu of your phone, then choose FreeScout.',
+    'share_to_ticket'      => 'Add to a ticket',
+    'share_to_ticket_help' => 'As an internal note, with the files attached.',
+    'share_ticket_number'  => 'Ticket number',
+    'share_add_note'       => 'Add the note',
+    'share_new_ticket'     => 'New ticket',
+    'share_open_form'      => 'Open the form',
+    'share_no_ticket'      => 'No ticket with this number that you can work on.',
+    'share_note_body'      => 'Shared from a phone.',
+    'share_failed'         => 'Could not send it: check the connection and try again.',
+
     // shortcuts of the installed app (long press on its icon)
     'shortcut_mine'        => 'My tickets',
     'shortcut_unassigned'  => 'Unassigned',

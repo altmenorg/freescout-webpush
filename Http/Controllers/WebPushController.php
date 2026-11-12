@@ -39,6 +39,19 @@ class WebPushController extends Controller
                     'url'  => route('webpush.go', ['target' => $target], false),
                 ];
             }, self::SHORTCUTS),
+            // "Share" menu of the phone (Android): photos, files and text go to the share page (see share())
+            'share_target'     => [
+                'action'  => $base.'webpush/share',
+                'method'  => 'POST',
+                'enctype' => 'multipart/form-data',
+                'params'  => [
+                    'title' => 'title',
+                    'text'  => 'text',
+                    'url'   => 'url',
+                    'files' => [['name' => 'files', 'accept' => ['image/*', 'video/*', 'audio/*', 'application/pdf', 'text/*',
+                        'application/*', '.doc', '.docx', '.xls', '.xlsx', '.odt', '.ods', '.csv', '.zip', '.eml']]],
+                ],
+            ],
         ], 200, ['Content-Type' => 'application/manifest+json'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
@@ -121,6 +134,63 @@ class WebPushController extends Controller
             $conversation->changeUser($user->id, $user);
         }
         return response()->json(['status' => 'success', 'badge_count' => WebPush::badgeCount($user->id)]);
+    }
+
+    /**
+     * Share page (phone's "Share" menu). What was shared stays in the phone's cache (service worker) until the agent
+     * chooses: the page shows it and sends it to a ticket as a note (shareNote), or opens the new-ticket form of a
+     * mailbox, which picks it up.
+     */
+    public function share()
+    {
+        $user = auth()->user();
+        $mailboxes = $user->mailboxesCanView();
+        $recent = \App\Conversation::whereIn('mailbox_id', $mailboxes->pluck('id'))
+            ->where('state', \App\Conversation::STATE_PUBLISHED)
+            ->orderByRaw('user_id = ? desc', [$user->id])
+            ->orderBy('last_reply_at', 'desc')
+            ->limit(15)
+            ->get(['id', 'number', 'subject', 'mailbox_id', 'user_id']);
+        return view('webpush::share', ['mailboxes' => $mailboxes, 'recent' => $recent]);
+    }
+
+    /** What was shared, as an internal note of a ticket the agent can work on, then the ticket. */
+    public function shareNote(Request $request)
+    {
+        $user = auth()->user();
+        $number = (int)ltrim((string)$request->input('ticket'), '# ');
+        $conversation = $number ? \App\Conversation::where('number', $number)
+            ->whereIn('mailbox_id', $user->mailboxesIdsCanView())->first() : null;
+        if (!$conversation || !$user->can('update', $conversation)) {
+            return response()->json(['status' => 'error', 'msg' => __('webpush::messages.share_no_ticket')]);
+        }
+        $text = trim((string)$request->input('text'));
+        $files = array_values(array_filter((array)$request->file('files'), function ($f) {
+            return $f && $f->isValid();
+        }));
+        if ($text === '' && !$files) {
+            return response()->json(['status' => 'error', 'msg' => __('webpush::messages.share_nothing')]);
+        }
+        $body = $text !== '' ? nl2br(htmlspecialchars($text, ENT_QUOTES, 'UTF-8')) : __('webpush::messages.share_note_body');
+        $thread = \App\Thread::createExtended([
+            'type'               => \App\Thread::TYPE_NOTE,
+            'body'               => $body,
+            'created_by_user_id' => $user->id,
+            'attachments'        => $files,
+        ], $conversation);
+        if (!$thread) {
+            return response()->json(['status' => 'error', 'msg' => __('webpush::messages.share_failed')]);
+        }
+        // as for a note written in the ticket: history, notifications of the other agents, other modules
+        event(new \App\Events\UserAddedNote($conversation, $thread));
+        \Eventy::action('conversation.note_added', $conversation, $thread);
+        return response()->json(['status' => 'success', 'url' => $conversation->url()]);
+    }
+
+    /** POST of the "Share" menu without the service worker: nothing to keep, the share page says so. */
+    public function shareFallback()
+    {
+        return redirect()->route('webpush.share', [], 303);
     }
 
     /** A subscription the browser renewed by itself (service worker, no session): see WebPush::renew(). */

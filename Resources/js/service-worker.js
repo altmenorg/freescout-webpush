@@ -12,6 +12,45 @@ self.addEventListener('activate', function (event) {
     event.waitUntil(self.clients.claim());
 });
 
+/* "Share" menu of the phone (share_target of the manifest): the shared files and text arrive as a POST, which has no
+   CSRF token and must not leave the phone before the agent chooses where they go. They are kept in this browser's
+   cache ("webpush-share") and the share page (GET) is opened; it sends them to a ticket, or to the new-ticket form.
+   Every other request goes to the network as before: nothing else is cached. */
+var SHARE_CACHE = 'webpush-share';
+
+self.addEventListener('fetch', function (event) {
+    var req = event.request;
+    if (req.method !== 'POST' || !/\/webpush\/share$/.test(new URL(req.url).pathname)) {
+        return;
+    }
+    event.respondWith(req.formData().then(function (form) {
+        return caches.delete(SHARE_CACHE).then(function () {
+            return caches.open(SHARE_CACHE);
+        }).then(function (cache) {
+            var files = form.getAll('files').filter(function (f) { return f && typeof f !== 'string' && f.size; });
+            var meta = {
+                title: String(form.get('title') || ''),
+                text: String(form.get('text') || ''),
+                url: String(form.get('url') || ''),
+                files: files.length,
+                at: Date.now()
+            };
+            var puts = files.map(function (file, i) {
+                return cache.put('/webpush-share/file/' + i, new Response(file, { headers: {
+                    'Content-Type': file.type || 'application/octet-stream',
+                    'X-File-Name': encodeURIComponent(file.name || ('file-' + (i + 1)))
+                } }));
+            });
+            puts.push(cache.put('/webpush-share/meta', new Response(JSON.stringify(meta), { headers: { 'Content-Type': 'application/json' } })));
+            return Promise.all(puts);
+        });
+    }).then(function () {
+        return Response.redirect(req.url, 303);
+    }, function () {
+        return Response.redirect(req.url, 303);
+    }));
+});
+
 /* The module's URLs, next to this worker: /webpush/service-worker -> /webpush/action, /webpush/resubscribe
    (FreeScout may live in a subfolder). */
 function moduleUrl(name) {

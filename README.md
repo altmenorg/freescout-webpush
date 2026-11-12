@@ -39,6 +39,10 @@ and only the subscribed device can read them.
 - **Shortcuts on the app's icon** (long press on Android, right click on Windows and macOS): **My tickets**,
   **Unassigned**, **New ticket**, **Search**. With several mailboxes, they go to the first one with tickets in that
   folder.
+- **Share to FreeScout** (Android): in the installed app, the phone's **Share** menu offers FreeScout, for photos,
+  screenshots, files and text, from the gallery or any app. A page then sends them to a ticket as an internal note with
+  the files attached, or opens the new-ticket form of a mailbox with the text and the files already in it. Nothing
+  leaves the phone before you choose (the service worker keeps it in the browser's cache).
 - **Notifications that keep coming**: when the browser replaces its push subscription by itself (Firefox does it now
   and then), the service worker sends the new one to FreeScout; and each device re-sends its subscription once a day,
   so a device whose subscription was lost gets its notifications back the next time FreeScout is opened.

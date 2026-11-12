@@ -16,6 +16,9 @@ Route::group(['middleware' => 'web', 'prefix' => \Helper::getSubdirectory(), 'na
     Route::post('/webpush/test', ['uses' => 'WebPushController@test', 'middleware' => ['auth', 'roles'], 'roles' => ['admin', 'user']])->name('webpush.test');
     // Shortcuts of the installed app (long press on its icon): resolved for the signed-in agent
     Route::get('/webpush/go/{target}', ['uses' => 'WebPushController@go', 'middleware' => ['auth', 'roles'], 'roles' => ['admin', 'user']])->name('webpush.go');
+    // "Share" menu of the phone: the page that sends what was shared to a ticket or to a new one
+    Route::get('/webpush/share', ['uses' => 'WebPushController@share', 'middleware' => ['auth', 'roles'], 'roles' => ['admin', 'user']])->name('webpush.share');
+    Route::post('/webpush/share/note', ['uses' => 'WebPushController@shareNote', 'middleware' => ['auth', 'roles'], 'roles' => ['admin', 'user']])->name('webpush.share.note');
 
     // Former URLs of the Refresh module (1.2 and older), where this feature came from: devices subscribed back then
     // keep their service worker and installed app until they pick up the new URLs.
@@ -29,4 +32,7 @@ Route::group(['middleware' => 'web', 'prefix' => \Helper::getSubdirectory(), 'na
 Route::group(['prefix' => \Helper::getSubdirectory(), 'namespace' => 'Modules\WebPush\Http\Controllers'], function () {
     Route::post('/webpush/action', 'WebPushController@action')->name('webpush.action');
     Route::post('/webpush/resubscribe', 'WebPushController@resubscribe')->name('webpush.resubscribe');
+    // What was shared normally never gets here: the service worker keeps it on the phone. Without the worker (not
+    // installed yet), the share page opens, empty.
+    Route::post('/webpush/share', 'WebPushController@shareFallback')->name('webpush.share.fallback');
 });

@@ -233,6 +233,102 @@ class WebPushServiceProvider extends ServiceProvider
                 }
                 var toast = function (type, msg) { if (window.showFloatingAlert) { showFloatingAlert(type, msg); } };
 
+                // "Share" menu of the phone: what was shared waits in this browser's cache (service worker) until the
+                // agent sends it, from the share page, to a ticket as a note, or to the new-ticket form of a mailbox
+                var loadShared = function () {
+                    if (!window.caches) { return Promise.resolve(null); }
+                    return caches.open('webpush-share').then(function (cache) {
+                        return cache.match('/webpush-share/meta').then(function (r) {
+                            if (!r) { return null; }
+                            return r.json().then(function (meta) {
+                                var reads = [];
+                                for (var i = 0; i < (meta.files || 0); i++) {
+                                    reads.push(cache.match('/webpush-share/file/' + i).then(function (fr) {
+                                        if (!fr) { return null; }
+                                        var name = decodeURIComponent(fr.headers.get('X-File-Name') || 'file');
+                                        return fr.blob().then(function (b) { return new File([b], name, { type: b.type }); });
+                                    }));
+                                }
+                                return Promise.all(reads).then(function (files) {
+                                    meta.fileObjs = files.filter(Boolean);
+                                    // the text: what was typed or shared, then the link, each once
+                                    meta.body = [meta.text, meta.url].filter(function (s, i, a) { return s && a.indexOf(s) === i; }).join('\n');
+                                    return meta;
+                                });
+                            });
+                        });
+                    });
+                };
+                var clearShared = function () { if (window.caches) { caches.delete('webpush-share'); } };
+
+                <?php if (\Route::is('webpush.share')) { ?>
+                (function () {
+                    var root = $('.webpush-share');
+                    loadShared().then(function (m) {
+                        var text = m ? [m.title, m.body].filter(Boolean).join('\n') : '';
+                        if (!m || (!m.fileObjs.length && !text)) {
+                            root.find('.webpush-share-empty').removeClass('hidden');
+                            return;
+                        }
+                        root.find('.webpush-share-body').removeClass('hidden');
+                        root.find('.webpush-share-text').text(text).toggle(!!text);
+                        var ul = root.find('.webpush-share-files');
+                        $.each(m.fileObjs, function (i, f) {
+                            var li = $('<li></li>');
+                            if (/^image\//.test(f.type)) { li.append($('<img alt="">').attr('src', URL.createObjectURL(f))); }
+                            ul.append(li.append($('<span></span>').text(f.name)));
+                        });
+                        root.on('click', '.webpush-share-note', function () {
+                            var btn = $(this).prop('disabled', true);
+                            var fd = new FormData();
+                            fd.append('_token', csrf());
+                            fd.append('ticket', root.find('.webpush-share-ticket').val());
+                            fd.append('text', text);
+                            $.each(m.fileObjs, function (i, f) { fd.append('files[]', f, f.name); });
+                            $.ajax({ url: root.data('note-url'), type: 'POST', data: fd, processData: false, contentType: false, dataType: 'json' })
+                                .done(function (r) {
+                                    if (r && r.status === 'success') { clearShared(); window.location.href = r.url; return; }
+                                    toast('error', (r && r.msg) || <?php echo $t('share_failed'); ?>);
+                                    btn.prop('disabled', false);
+                                })
+                                .fail(function () { toast('error', <?php echo $t('share_failed'); ?>); btn.prop('disabled', false); });
+                        });
+                        root.on('click', '.webpush-share-new', function () {
+                            try { window.sessionStorage.setItem('webpush_share', '1'); } catch (e) {}
+                            window.location.href = String(root.data('new-url')).replace('__MAILBOX__', root.find('.webpush-share-mailbox').val());
+                        });
+                    });
+                })();
+                <?php } ?>
+
+                <?php if (\Route::is('conversations.create')) { ?>
+                // New-ticket form opened from the share page: the shared title as subject, the text in the editor,
+                // the files attached by FreeScout's own upload (editorSendFile), as if dropped on the editor
+                (function () {
+                    var pending = false;
+                    try { pending = window.sessionStorage.getItem('webpush_share') === '1'; window.sessionStorage.removeItem('webpush_share'); } catch (e) {}
+                    if (!pending) { return; }
+                    loadShared().then(function (m) {
+                        if (!m) { return; }
+                        var tries = 0;
+                        var fill = function () {
+                            var ed = $('#body');
+                            if (!ed.length || !ed.next('.note-editor').length || typeof window.editorSendFile !== 'function') {
+                                if (++tries < 25) { setTimeout(fill, 200); }
+                                return;
+                            }
+                            if (m.title && !$('#subject').val()) { $('#subject').val(m.title); }
+                            if (m.body) {
+                                ed.summernote('code', $('<div></div>').text(m.body).html().replace(/\n/g, '<br>') + ed.summernote('code'));
+                            }
+                            $.each(m.fileObjs, function (i, f) { window.editorSendFile(f, true, true); });
+                            clearShared();
+                        };
+                        fill();
+                    });
+                })();
+                <?php } ?>
+
                 <?php if ($own_notifications) { ?>
                 // Profile → Notifications (one's own): "Notifications on this device" box above the events table
                 var form = $('form.user-subscriptions').first();

@@ -50,6 +50,19 @@ return [
     'action_reply'         => 'Répondre',
     'action_failed'        => 'Impossible depuis la notification : touchez-la pour ouvrir le ticket.',
 
+    // menu « Partager » du téléphone
+    'share_title'          => 'Partager vers FreeScout',
+    'share_nothing'        => 'Rien à partager : utilisez le menu Partager du téléphone, puis choisissez FreeScout.',
+    'share_to_ticket'      => 'Ajouter à un ticket',
+    'share_to_ticket_help' => 'En note interne, avec les fichiers en pièces jointes.',
+    'share_ticket_number'  => 'Numéro du ticket',
+    'share_add_note'       => 'Ajouter la note',
+    'share_new_ticket'     => 'Nouveau ticket',
+    'share_open_form'      => 'Ouvrir le formulaire',
+    'share_no_ticket'      => 'Aucun ticket avec ce numéro sur lequel vous pouvez travailler.',
+    'share_note_body'      => 'Partagé depuis un téléphone.',
+    'share_failed'         => 'Envoi impossible : vérifiez la connexion et réessayez.',
+
     // raccourcis de l'app installée (appui long sur son icône)
     'shortcut_mine'        => 'Mes tickets',
     'shortcut_unassigned'  => 'Non assignés',

@@ -20,3 +20,15 @@
 .webpush-ask span { flex: 1; }
 .webpush-ask button { flex: none; padding: 6px 10px; border: 0; border-radius: 6px; background: transparent; color: #fff; font-weight: 600; }
 .webpush-ask .webpush-ask-yes { background: #fff; color: #1e293b; }
+
+/* "Share" page (phone's Share menu) */
+.webpush-share { max-width: 640px; padding-top: 16px; padding-bottom: 32px; }
+.webpush-share-preview { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; margin-bottom: 20px; }
+.webpush-share-text { white-space: pre-wrap; word-break: break-word; margin: 0 0 8px; }
+.webpush-share-files { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.webpush-share-files li { display: flex; flex-direction: column; align-items: flex-start; max-width: 140px; font-size: 12px; word-break: break-all; }
+.webpush-share-files img { max-width: 140px; max-height: 140px; border-radius: 4px; margin-bottom: 4px; }
+.webpush-share-choice { margin-bottom: 20px; }
+.webpush-share-choice h4 { margin-bottom: 4px; }
+.webpush-share-row { display: flex; gap: 8px; }
+.webpush-share-row .form-control { flex: 1; min-width: 0; }
