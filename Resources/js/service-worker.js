@@ -80,6 +80,8 @@ self.addEventListener('push', function (event) {
         badge: data.badge || undefined,
         tag: data.tag || undefined,       // one notification per ticket: the next one replaces it
         renotify: !!data.tag,
+        image: data.image || undefined,   // first picture of the message, shown large (Android, Windows)
+        timestamp: data.timestamp || undefined,
         actions: actions,
         data: { url: data.url || self.registration.scope, actions: data.actions || [], failed: data.failed || '' }
     }));

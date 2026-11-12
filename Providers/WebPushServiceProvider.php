@@ -69,6 +69,8 @@ class WebPushServiceProvider extends ServiceProvider
                     if (Settings::hideContent()) {
                         $payload['title'] = '#'.$conv->number;
                         $payload['body'] = __('webpush::messages.new_activity');
+                    } else {
+                        $payload = array_merge($payload, self::richContent($thread, $by));
                     }
                     foreach ($info['users'] as $user) {
                         // the agent's quiet hours (Profile › Notifications), urgent tickets excepted if they chose so
@@ -106,6 +108,42 @@ class WebPushServiceProvider extends ServiceProvider
             : [['action' => 'assign', 'title' => __('webpush::messages.action_assign'),
                 'token' => WebPush::actionToken($user->id, $conv->id, 'assign')], $reply];
         return ['actions' => $actions, 'failed' => __('webpush::messages.action_failed')];
+    }
+
+    /**
+     * What makes a notification readable at a glance, when the content is not hidden: the photo of who wrote (the
+     * customer's, or the agent's) instead of the app's icon, the time it was written (a notification read later says
+     * when), and the first picture attached to the message, shown large where the phone does it (Android, Windows).
+     * Photos and attachments are loaded by the phone without a session: FreeScout serves customer photos publicly and
+     * attachments with a token in their address.
+     */
+    public static function richContent($thread, $by)
+    {
+        $rich = [];
+        try {
+            if ($thread && $thread->created_at) {
+                $rich['timestamp'] = $thread->created_at->getTimestamp() * 1000;
+            }
+            if ($by && method_exists($by, 'getPhotoUrl')) {
+                $photo = $by->getPhotoUrl(false);
+                if ($photo) {
+                    $rich['icon'] = $photo;
+                }
+            }
+            if ($thread && $thread->has_attachments) {
+                foreach ($thread->attachments as $attachment) {
+                    if (!$attachment->embedded && strpos((string)$attachment->mime_type, 'image/') === 0
+                        && (int)$attachment->size > 0 && (int)$attachment->size < 5 * 1024 * 1024
+                    ) {
+                        $rich['image'] = $attachment->url();
+                        break;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('[WebPush] '.$e->getMessage());
+        }
+        return $rich;
     }
 
     /** Manage › Settings › Web Push: name and icon of the app, contact given to the push services. */

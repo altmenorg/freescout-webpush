@@ -43,6 +43,9 @@ and only the subscribed device can read them.
   screenshots, files and text, from the gallery or any app. A page then sends them to a ticket as an internal note with
   the files attached, or opens the new-ticket form of a mailbox with the text and the files already in it. Nothing
   leaves the phone before you choose (the service worker keeps it in the browser's cache).
+- **Notifications you can read at a glance**: the photo of who wrote (the customer's, or the agent's) instead of the
+  app's icon, the time the message was written, and the first picture attached to it, shown large on Android and
+  Windows. With **Hide the content** on, none of them.
 - **Quiet hours**, per agent, in Profile › Notifications: no notifications from one time to another (overnight
   ranges work), and optionally all weekend, in the agent's own time zone. With the Refresh module, urgent tickets can
   still notify. The "Send a test" button ignores them.
