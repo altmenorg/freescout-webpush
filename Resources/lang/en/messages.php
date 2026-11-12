@@ -48,7 +48,6 @@ return [
     'invalid_subscription' => 'Invalid subscription',
     'action_assign'        => 'Assign to me',
     'action_reply'         => 'Reply',
-    'action_dismiss'       => 'Dismiss',
     'action_failed'        => 'Could not do it from the notification: tap to open the ticket.',
 
     // shortcuts of the installed app (long press on its icon)

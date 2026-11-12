@@ -27,14 +27,13 @@ and only the subscribed device can read them.
   (RFC 8291 / 8188), with OpenSSL. No Composer dependency, no external service.
 - One notification per ticket: a new event replaces the previous notification of the same ticket. Tapping it opens the
   ticket.
-- **Buttons in the notification** (two, Chrome's limit): **Assign to me** and **Reply** for a ticket that is not
-  yours, **Reply** and **Dismiss** for one that is.
+- **Buttons in the notification**: **Assign to me** (for a ticket that is not yours) and **Reply**.
   - **Assign to me** is done in the background, without opening the app, with the same rights as in the ticket (the
     button carries a token signed for that agent, that ticket and that action, valid a week).
   - **Reply** opens the ticket with the reply editor open (a web notification has no text field), in FreeScout's
     interface or in Refresh's.
-  - **Dismiss** only closes the notification. Nothing more drastic: closing a ticket from a notification, without
-    reading it, is too easy a mistake.
+  - No "Dismiss" (a swipe does it), and nothing more drastic: closing a ticket from a notification, without reading
+    it, is too easy a mistake.
 
   Chrome, Edge and Firefox on Android and desktops; iPhones don't show notification buttons, tapping opens the ticket.
 - **Shortcuts on the app's icon** (long press on Android, right click on Windows and macOS): **My tickets**,

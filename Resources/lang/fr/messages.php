@@ -48,7 +48,6 @@ return [
     'invalid_subscription' => 'Abonnement invalide',
     'action_assign'        => 'M\'assigner',
     'action_reply'         => 'Répondre',
-    'action_dismiss'       => 'Ignorer',
     'action_failed'        => 'Impossible depuis la notification : touchez-la pour ouvrir le ticket.',
 
     // raccourcis de l'app installée (appui long sur son icône)

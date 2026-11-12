@@ -87,18 +87,17 @@ class WebPushServiceProvider extends ServiceProvider
     }
 
     /**
-     * Buttons of a notification (two at most, Chrome's limit): "Assign to me" and "Reply" for a ticket that is not the
-     * agent's, "Reply" and "Dismiss" for one that is. "Reply" opens the ticket with the reply editor open (a web
-     * notification has no text field), "Dismiss" only closes the notification. Nothing more drastic: closing a ticket
-     * from a notification, without reading it, is too easy a mistake. "Assign to me" carries a token signed for this
-     * agent, this ticket and this action, which the service worker sends back (it has no session). Phones that do not
-     * show buttons (iPhone) just open the ticket.
+     * Buttons of a notification: "Assign to me" (for a ticket that is not the agent's) and "Reply". "Reply" opens the
+     * ticket with the reply editor open (a web notification has no text field). No "Dismiss": a swipe does it. Nothing
+     * more drastic either: closing a ticket from a notification, without reading it, is too easy a mistake. "Assign to
+     * me" carries a token signed for this agent, this ticket and this action, which the service worker sends back (it
+     * has no session). Phones that do not show buttons (iPhone) just open the ticket.
      */
     public static function buttons($conv, $user)
     {
         $reply = ['action' => 'reply', 'title' => __('webpush::messages.action_reply'), 'url' => $conv->url().'#webpush-reply'];
         $actions = (int)$conv->user_id === (int)$user->id
-            ? [$reply, ['action' => 'dismiss', 'title' => __('webpush::messages.action_dismiss')]]
+            ? [$reply]
             : [['action' => 'assign', 'title' => __('webpush::messages.action_assign'),
                 'token' => WebPush::actionToken($user->id, $conv->id, 'assign')], $reply];
         return ['actions' => $actions, 'failed' => __('webpush::messages.action_failed')];
