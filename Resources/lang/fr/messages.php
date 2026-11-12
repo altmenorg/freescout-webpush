@@ -47,6 +47,7 @@ return [
     'test_none'            => 'Aucun appareil abonné n\'a accepté la notification',
     'invalid_subscription' => 'Abonnement invalide',
     'action_assign'        => 'M\'assigner',
+    'action_reply'         => 'Répondre',
     'action_dismiss'       => 'Ignorer',
     'action_failed'        => 'Impossible depuis la notification : touchez-la pour ouvrir le ticket.',
 

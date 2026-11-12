@@ -33,7 +33,7 @@ self.addEventListener('push', function (event) {
     }
     // number on the installed app's icon: the agent's open assigned tickets, sent with each notification
     setBadge(data.badge_count);
-    // buttons: "Assign to me", with a token signed for this agent, this ticket and this action, and "Dismiss"
+    // buttons: "Assign to me" (with a token signed for this agent, this ticket and this action), "Reply", "Dismiss"
     var actions = (data.actions || []).map(function (a) { return { action: a.action, title: a.title }; });
     event.waitUntil(self.registration.showNotification(data.title || 'FreeScout', {
         body: data.body || '',
@@ -67,6 +67,10 @@ self.addEventListener('notificationclick', function (event) {
     (data.actions || []).forEach(function (a) { if (a.action === event.action) { button = a; } });
     if (!button) {
         event.waitUntil(openUrl(url));
+        return;
+    }
+    if (button.url) {
+        event.waitUntil(openUrl(button.url));   // "Reply": the ticket, with the reply editor open
         return;
     }
     if (!button.token) {

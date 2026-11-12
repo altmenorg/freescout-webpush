@@ -87,24 +87,21 @@ class WebPushServiceProvider extends ServiceProvider
     }
 
     /**
-     * Buttons of a notification, for this agent, when the ticket is not theirs: "Assign to me", and "Dismiss", which
-     * only closes the notification. Nothing more drastic: closing a ticket from a notification, without reading it,
-     * is too easy a mistake. "Assign to me" carries a token signed for this agent, this ticket and this action, which
-     * the service worker sends back (it has no session). Phones that do not show buttons (iPhone) just open the ticket.
+     * Buttons of a notification (two at most, Chrome's limit): "Assign to me" and "Reply" for a ticket that is not the
+     * agent's, "Reply" and "Dismiss" for one that is. "Reply" opens the ticket with the reply editor open (a web
+     * notification has no text field), "Dismiss" only closes the notification. Nothing more drastic: closing a ticket
+     * from a notification, without reading it, is too easy a mistake. "Assign to me" carries a token signed for this
+     * agent, this ticket and this action, which the service worker sends back (it has no session). Phones that do not
+     * show buttons (iPhone) just open the ticket.
      */
     public static function buttons($conv, $user)
     {
-        if ((int)$conv->user_id === (int)$user->id) {
-            return [];
-        }
-        return [
-            'actions' => [
-                ['action' => 'assign', 'title' => __('webpush::messages.action_assign'),
-                    'token' => WebPush::actionToken($user->id, $conv->id, 'assign')],
-                ['action' => 'dismiss', 'title' => __('webpush::messages.action_dismiss')],
-            ],
-            'failed' => __('webpush::messages.action_failed'),
-        ];
+        $reply = ['action' => 'reply', 'title' => __('webpush::messages.action_reply'), 'url' => $conv->url().'#webpush-reply'];
+        $actions = (int)$conv->user_id === (int)$user->id
+            ? [$reply, ['action' => 'dismiss', 'title' => __('webpush::messages.action_dismiss')]]
+            : [['action' => 'assign', 'title' => __('webpush::messages.action_assign'),
+                'token' => WebPush::actionToken($user->id, $conv->id, 'assign')], $reply];
+        return ['actions' => $actions, 'failed' => __('webpush::messages.action_failed')];
     }
 
     /** Manage › Settings › Web Push: name and icon of the app, contact given to the push services. */
@@ -203,6 +200,22 @@ class WebPushServiceProvider extends ServiceProvider
                 };
                 // for other modules (a mobile interface, for instance): current() / enable() / disable() promises
                 window.webpush = { current: current, enable: enable, disable: disable };
+
+                // "Reply" button of a notification: the ticket opens with "#webpush-reply", and the reply editor is
+                // opened by FreeScout's own Reply button (also the one Refresh's toolbar uses)
+                var openReply = function () {
+                    if (window.location.hash !== '#webpush-reply') { return; }
+                    if (window.history && history.replaceState) { history.replaceState(null, '', window.location.pathname + window.location.search); }
+                    var tries = 0;
+                    var go = function () {
+                        var btn = $('.conv-reply:first');
+                        if (btn.length && $('.conv-reply-block').hasClass('hidden')) { btn.trigger('click'); }
+                        else if (!btn.length && ++tries < 10) { setTimeout(go, 200); }
+                    };
+                    setTimeout(go, 200);
+                };
+                openReply();
+                window.addEventListener('hashchange', openReply);
 
                 // This device's subscription, sent again once a day: if the browser replaced it without telling the
                 // service worker which one it replaced, or the server dropped it, the device gets its notifications
