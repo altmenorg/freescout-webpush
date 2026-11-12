@@ -50,6 +50,14 @@ return [
     'action_reply'         => 'Reply',
     'action_failed'        => 'Could not do it from the notification: tap to open the ticket.',
 
+    // quiet hours (Profile › Notifications)
+    'quiet_title'          => 'Quiet hours: no notifications from',
+    'quiet_to'             => 'to',
+    'quiet_weekend'        => 'and all weekend',
+    'quiet_urgent'         => 'except urgent tickets',
+    'quiet_save'           => 'Save',
+    'quiet_saved'          => 'Quiet hours saved',
+
     // "Share" menu of the phone
     'share_title'          => 'Share to FreeScout',
     'share_nothing'        => 'Nothing to share: use the Share menu of your phone, then choose FreeScout.',

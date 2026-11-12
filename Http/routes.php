@@ -18,6 +18,7 @@ Route::group(['middleware' => 'web', 'prefix' => \Helper::getSubdirectory(), 'na
     Route::get('/webpush/go/{target}', ['uses' => 'WebPushController@go', 'middleware' => ['auth', 'roles'], 'roles' => ['admin', 'user']])->name('webpush.go');
     // "Share" menu of the phone: the page that sends what was shared to a ticket or to a new one
     Route::get('/webpush/share', ['uses' => 'WebPushController@share', 'middleware' => ['auth', 'roles'], 'roles' => ['admin', 'user']])->name('webpush.share');
+    Route::post('/webpush/quiet', ['uses' => 'WebPushController@quiet', 'middleware' => ['auth', 'roles'], 'roles' => ['admin', 'user']])->name('webpush.quiet');
     Route::post('/webpush/share/note', ['uses' => 'WebPushController@shareNote', 'middleware' => ['auth', 'roles'], 'roles' => ['admin', 'user']])->name('webpush.share.note');
 
     // Former URLs of the Refresh module (1.2 and older), where this feature came from: devices subscribed back then

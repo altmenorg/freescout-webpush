@@ -32,3 +32,10 @@
 .webpush-share-choice h4 { margin-bottom: 4px; }
 .webpush-share-row { display: flex; gap: 8px; }
 .webpush-share-row .form-control { flex: 1; min-width: 0; }
+
+/* Quiet hours (Profile › Notifications) */
+.webpush-quiet { margin: 12px 0; padding-top: 10px; border-top: 1px solid #e2e8f0; }
+.webpush-quiet label { display: block; font-weight: normal; margin: 4px 0; }
+.webpush-quiet-range { display: flex; align-items: center; gap: 6px; margin: 4px 0 4px 20px; }
+.webpush-quiet-range .form-control { width: auto; }
+.webpush-quiet.is-off .webpush-quiet-range, .webpush-quiet.is-off label:not(.webpush-quiet-on) { opacity: .5; }

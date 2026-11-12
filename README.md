@@ -43,6 +43,9 @@ and only the subscribed device can read them.
   screenshots, files and text, from the gallery or any app. A page then sends them to a ticket as an internal note with
   the files attached, or opens the new-ticket form of a mailbox with the text and the files already in it. Nothing
   leaves the phone before you choose (the service worker keeps it in the browser's cache).
+- **Quiet hours**, per agent, in Profile › Notifications: no notifications from one time to another (overnight
+  ranges work), and optionally all weekend, in the agent's own time zone. With the Refresh module, urgent tickets can
+  still notify. The "Send a test" button ignores them.
 - **Notifications that keep coming**: when the browser replaces its push subscription by itself (Firefox does it now
   and then), the service worker sends the new one to FreeScout; and each device re-sends its subscription once a day,
   so a device whose subscription was lost gets its notifications back the next time FreeScout is opened.

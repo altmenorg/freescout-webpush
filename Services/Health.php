@@ -11,7 +11,7 @@ namespace Modules\WebPush\Services;
 class Health
 {
     const CLASSES = [
-        Settings::class, WebPush::class, Diagnostics::class,
+        Settings::class, WebPush::class, Diagnostics::class, QuietHours::class,
         \Modules\WebPush\Http\Controllers\WebPushController::class,
     ];
 
@@ -22,7 +22,8 @@ class Health
 
     const ROUTES = ['webpush.manifest', 'webpush.sw', 'webpush.key', 'webpush.subscribe', 'webpush.unsubscribe',
         'webpush.devices', 'webpush.badge', 'webpush.test', 'webpush.health', 'webpush.diagnostics', 'webpush.go',
-        'webpush.action', 'webpush.resubscribe', 'webpush.share', 'webpush.share.note', 'webpush.share.fallback'];
+        'webpush.action', 'webpush.resubscribe', 'webpush.share', 'webpush.share.note', 'webpush.share.fallback',
+        'webpush.quiet'];
 
     public static function check()
     {

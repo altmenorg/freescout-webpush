@@ -188,6 +188,13 @@ class WebPushController extends Controller
         return response()->json(['status' => 'success', 'url' => $conversation->url()]);
     }
 
+    /** Quiet hours of the signed-in agent (Profile › Notifications). */
+    public function quiet(Request $request)
+    {
+        return response()->json(['status' => 'success',
+            'quiet' => \Modules\WebPush\Services\QuietHours::set(auth()->user()->id, $request->all())]);
+    }
+
     /** POST of the "Share" menu without the service worker: nothing to keep, the share page says so. */
     public function shareFallback()
     {

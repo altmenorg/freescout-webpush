@@ -3,6 +3,7 @@
 namespace Modules\WebPush\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Modules\WebPush\Services\QuietHours;
 use Modules\WebPush\Services\Settings;
 use Modules\WebPush\Services\WebPush;
 
@@ -70,6 +71,10 @@ class WebPushServiceProvider extends ServiceProvider
                         $payload['body'] = __('webpush::messages.new_activity');
                     }
                     foreach ($info['users'] as $user) {
+                        // the agent's quiet hours (Profile › Notifications), urgent tickets excepted if they chose so
+                        if (QuietHours::silences($user, $conv)) {
+                            continue;
+                        }
                         $items[] = [$user->id, $payload + self::buttons($conv, $user)];
                     }
                 } catch (\Throwable $e) {
@@ -350,6 +355,39 @@ class WebPushServiceProvider extends ServiceProvider
                     var devices = $('<div class="webpush-devices"><div class="webpush-devices-title"></div><ul></ul></div>');
                     devices.find('.webpush-devices-title').text(<?php echo $t('your_devices'); ?>);
                     box.find('.webpush-help').before(devices);
+                    // Quiet hours: no notification on the agent's devices during a time range (and the weekend)
+                    var quiet = <?php echo json_encode(QuietHours::get(auth()->user()->id)); ?>;
+                    var qbox = $('<div class="webpush-quiet"><label class="webpush-quiet-on"><input type="checkbox"> <span></span></label>'
+                        + '<div class="webpush-quiet-range"><input type="time" class="form-control webpush-quiet-from"> <span class="webpush-quiet-to-label"></span> '
+                        + '<input type="time" class="form-control webpush-quiet-to"></div>'
+                        + '<label><input type="checkbox" class="webpush-quiet-weekend"> <span></span></label>'
+                        + (<?php echo json_encode(\Route::has('refresh.tickets')); ?> ? '<label><input type="checkbox" class="webpush-quiet-urgent"> <span></span></label>' : '')
+                        + '<button type="button" class="btn btn-default btn-sm webpush-quiet-save"></button></div>');
+                    qbox.find('.webpush-quiet-on span').text(<?php echo $t('quiet_title'); ?>);
+                    qbox.find('.webpush-quiet-to-label').text(<?php echo $t('quiet_to'); ?>);
+                    qbox.find('.webpush-quiet-weekend').next().text(<?php echo $t('quiet_weekend'); ?>);
+                    qbox.find('.webpush-quiet-urgent').next().text(<?php echo $t('quiet_urgent'); ?>);
+                    qbox.find('.webpush-quiet-save').text(<?php echo $t('quiet_save'); ?>);
+                    qbox.find('.webpush-quiet-on input').prop('checked', !!quiet.enabled);
+                    qbox.find('.webpush-quiet-from').val(quiet.from);
+                    qbox.find('.webpush-quiet-to').val(quiet.to);
+                    qbox.find('.webpush-quiet-weekend').prop('checked', !!quiet.weekend);
+                    qbox.find('.webpush-quiet-urgent').prop('checked', !!quiet.urgent);
+                    var quietState = function () { qbox.toggleClass('is-off', !qbox.find('.webpush-quiet-on input').prop('checked')); };
+                    quietState();
+                    qbox.on('change', '.webpush-quiet-on input', quietState);
+                    qbox.on('click', '.webpush-quiet-save', function () {
+                        $.post(<?php echo json_encode(route('webpush.quiet')); ?>, {
+                            _token: csrf(),
+                            enabled: qbox.find('.webpush-quiet-on input').prop('checked') ? 1 : 0,
+                            from: qbox.find('.webpush-quiet-from').val(),
+                            to: qbox.find('.webpush-quiet-to').val(),
+                            weekend: qbox.find('.webpush-quiet-weekend').prop('checked') ? 1 : 0,
+                            urgent: qbox.find('.webpush-quiet-urgent').prop('checked') ? 1 : 0
+                        }).done(function () { toast('success', <?php echo $t('quiet_saved'); ?>); })
+                          .fail(function () { toast('error', <?php echo $t('share_failed'); ?>); });
+                    });
+                    box.find('.webpush-help').before(qbox);
                     var lang = document.documentElement.lang || undefined;
                     var renderDevices = function (sub) {
                         $.getJSON(<?php echo json_encode(route('webpush.devices')); ?>).done(function (r) {

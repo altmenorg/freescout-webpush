@@ -50,6 +50,14 @@ return [
     'action_reply'         => 'Répondre',
     'action_failed'        => 'Impossible depuis la notification : touchez-la pour ouvrir le ticket.',
 
+    // heures calmes (Profil › Notifications)
+    'quiet_title'          => 'Heures calmes : pas de notifications de',
+    'quiet_to'             => 'à',
+    'quiet_weekend'        => 'et tout le week-end',
+    'quiet_urgent'         => 'sauf les tickets urgents',
+    'quiet_save'           => 'Enregistrer',
+    'quiet_saved'          => 'Heures calmes enregistrées',
+
     // menu « Partager » du téléphone
     'share_title'          => 'Partager vers FreeScout',
     'share_nothing'        => 'Rien à partager : utilisez le menu Partager du téléphone, puis choisissez FreeScout.',
