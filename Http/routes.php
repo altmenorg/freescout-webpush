@@ -14,9 +14,19 @@ Route::group(['middleware' => 'web', 'prefix' => \Helper::getSubdirectory(), 'na
     Route::get('/webpush/health', ['uses' => 'WebPushController@health', 'middleware' => ['auth', 'roles'], 'roles' => ['admin']])->name('webpush.health');
     Route::get('/webpush/diagnostics', ['uses' => 'WebPushController@diagnostics', 'middleware' => ['auth', 'roles'], 'roles' => ['admin']])->name('webpush.diagnostics');
     Route::post('/webpush/test', ['uses' => 'WebPushController@test', 'middleware' => ['auth', 'roles'], 'roles' => ['admin', 'user']])->name('webpush.test');
+    // Shortcuts of the installed app (long press on its icon): resolved for the signed-in agent
+    Route::get('/webpush/go/{target}', ['uses' => 'WebPushController@go', 'middleware' => ['auth', 'roles'], 'roles' => ['admin', 'user']])->name('webpush.go');
 
     // Former URLs of the Refresh module (1.2 and older), where this feature came from: devices subscribed back then
     // keep their service worker and installed app until they pick up the new URLs.
     Route::get('/refresh/service-worker', 'WebPushController@serviceWorker')->name('webpush.legacy.sw');
     Route::get('/refresh/pwa-manifest', 'WebPushController@manifest')->name('webpush.legacy.manifest');
+});
+
+// Called by the service worker, which has neither the session's CSRF token nor, in the background, a page: no "web"
+// middleware. Each request proves itself instead: a notification button carries a token signed for that agent, that
+// ticket and that action; a renewed subscription is accepted only with the secret of the one it replaces.
+Route::group(['prefix' => \Helper::getSubdirectory(), 'namespace' => 'Modules\WebPush\Http\Controllers'], function () {
+    Route::post('/webpush/action', 'WebPushController@action')->name('webpush.action');
+    Route::post('/webpush/resubscribe', 'WebPushController@resubscribe')->name('webpush.resubscribe');
 });

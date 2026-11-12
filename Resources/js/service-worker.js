@@ -1,7 +1,8 @@
 /* Web Push for FreeScout: service worker of the installable app (PWA).
    Served by the module at /webpush/service-worker with "Service-Worker-Allowed: /", so it covers the whole site
-   without copying a file into FreeScout's public folder. It caches nothing: it only receives Web Push notifications,
-   even when the app and the browser are closed (the push service wakes it up). */
+   without copying a file into FreeScout's public folder. It caches nothing: it receives Web Push notifications, even
+   when the app and the browser are closed (the push service wakes it up), runs their buttons, and renews the
+   subscription when the browser replaces it. */
 
 self.addEventListener('install', function () {
     self.skipWaiting();
@@ -11,6 +12,18 @@ self.addEventListener('activate', function (event) {
     event.waitUntil(self.clients.claim());
 });
 
+/* The module's URLs, next to this worker: /webpush/service-worker -> /webpush/action, /webpush/resubscribe
+   (FreeScout may live in a subfolder). */
+function moduleUrl(name) {
+    return self.location.href.replace(/\/(webpush|refresh)\/service-worker.*$/, '/webpush/' + name);
+}
+
+function setBadge(count) {
+    if (typeof count === 'number' && self.navigator && self.navigator.setAppBadge) {
+        (count > 0 ? self.navigator.setAppBadge(count) : self.navigator.clearAppBadge()).catch(function () {});
+    }
+}
+
 self.addEventListener('push', function (event) {
     var data = {};
     try {
@@ -19,23 +32,22 @@ self.addEventListener('push', function (event) {
         data = { body: event.data ? event.data.text() : '' };
     }
     // number on the installed app's icon: the agent's open assigned tickets, sent with each notification
-    if (typeof data.badge_count === 'number' && self.navigator && self.navigator.setAppBadge) {
-        (data.badge_count > 0 ? self.navigator.setAppBadge(data.badge_count) : self.navigator.clearAppBadge()).catch(function () {});
-    }
+    setBadge(data.badge_count);
+    // buttons ("Assign to me", "Close"): each with a token signed for this agent, this ticket and this action
+    var actions = (data.actions || []).map(function (a) { return { action: a.action, title: a.title }; });
     event.waitUntil(self.registration.showNotification(data.title || 'FreeScout', {
         body: data.body || '',
         icon: data.icon || undefined,
         badge: data.badge || undefined,
         tag: data.tag || undefined,       // one notification per ticket: the next one replaces it
         renotify: !!data.tag,
-        data: { url: data.url || self.registration.scope }
+        actions: actions,
+        data: { url: data.url || self.registration.scope, actions: data.actions || [], failed: data.failed || '' }
     }));
 });
 
-self.addEventListener('notificationclick', function (event) {
-    event.notification.close();
-    var url = (event.notification.data && event.notification.data.url) || self.registration.scope;
-    event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (list) {
+function openUrl(url) {
+    return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (list) {
         for (var i = 0; i < list.length; i++) {
             var c = list[i];
             if (c.url.indexOf(self.location.origin) === 0 && 'focus' in c) {
@@ -43,5 +55,61 @@ self.addEventListener('notificationclick', function (event) {
             }
         }
         return self.clients.openWindow(url);
+    });
+}
+
+self.addEventListener('notificationclick', function (event) {
+    var n = event.notification;
+    var data = n.data || {};
+    var url = data.url || self.registration.scope;
+    n.close();
+    var button = null;
+    (data.actions || []).forEach(function (a) { if (a.action === event.action) { button = a; } });
+    if (!button) {
+        event.waitUntil(openUrl(url));
+        return;
+    }
+    // A button: done in the background, the app is not opened. When it fails (rights changed, token too old, no
+    // network), a notification says so and opens the ticket.
+    event.waitUntil(fetch(moduleUrl('action'), {
+        method: 'POST',
+        credentials: 'omit',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ token: button.token })
+    }).then(function (r) {
+        if (!r.ok) { throw new Error('HTTP ' + r.status); }
+        return r.json();
+    }).then(function (r) {
+        setBadge(r.badge_count);
+    }).catch(function () {
+        return self.registration.showNotification(n.title, {
+            body: data.failed || n.body,
+            icon: n.icon || undefined,
+            badge: n.badge || undefined,
+            tag: n.tag || undefined,
+            data: { url: url }
+        });
     }));
+});
+
+/* The browser replaced the push subscription (Firefox does it now and then, Chrome rarely): without this, the device
+   would silently stop receiving notifications until the agent turned them on again. The new subscription is sent with
+   the old one's secret, which proves it comes from this browser (the worker has no session). When the browser gives no
+   old subscription, the page re-sends the current one the next time FreeScout is opened. */
+self.addEventListener('pushsubscriptionchange', function (event) {
+    var old = event.oldSubscription;
+    var oldJson = old && old.toJSON ? old.toJSON() : null;
+    var key = old && old.options ? old.options.applicationServerKey : null;
+    event.waitUntil((event.newSubscription
+        ? Promise.resolve(event.newSubscription)
+        : (key ? self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }) : Promise.reject())
+    ).then(function (sub) {
+        if (!oldJson || !oldJson.keys) { return; }
+        return fetch(moduleUrl('resubscribe'), {
+            method: 'POST',
+            credentials: 'omit',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ old_endpoint: oldJson.endpoint, old_auth: oldJson.keys.auth, subscription: sub.toJSON() })
+        });
+    }).catch(function () {}));
 });

@@ -27,6 +27,16 @@ and only the subscribed device can read them.
   (RFC 8291 / 8188), with OpenSSL. No Composer dependency, no external service.
 - One notification per ticket: a new event replaces the previous notification of the same ticket. Tapping it opens the
   ticket.
+- **Buttons in the notification**: **Assign to me** (when the ticket is not yours) and **Close** (when it is not
+  closed), done in the background without opening the app, with the same rights as in the ticket. Each button carries a
+  token signed for that agent, that ticket and that action, valid a week. Chrome, Edge and Firefox on Android and
+  desktops; iPhones don't show notification buttons, tapping opens the ticket.
+- **Shortcuts on the app's icon** (long press on Android, right click on Windows and macOS): **My tickets**,
+  **Unassigned**, **New ticket**, **Search**. With several mailboxes, they go to the first one with tickets in that
+  folder.
+- **Notifications that keep coming**: when the browser replaces its push subscription by itself (Firefox does it now
+  and then), the service worker sends the new one to FreeScout; and each device re-sends its subscription once a day,
+  so a device whose subscription was lost gets its notifications back the next time FreeScout is opened.
 - **"Notifications on this device"** box in Profile › Notifications: turn on, turn off, send a test, and the list of
   **your devices** (browser and system, date added), each removable from any other one — a lost or replaced phone
   stops receiving notifications.

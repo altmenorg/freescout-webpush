@@ -32,7 +32,97 @@ class WebPushController extends Controller
             'background_color' => '#ffffff',
             'theme_color'      => '#ffffff', // white status bar: Android draws dark, readable icons on it
             'icons'            => Settings::appIcons(),
+            // long press on the app's icon (Android, Windows, macOS): each one is resolved for the agent by go()
+            'shortcuts'        => array_map(function ($target) {
+                return [
+                    'name' => __('webpush::messages.shortcut_'.$target),
+                    'url'  => route('webpush.go', ['target' => $target], false),
+                ];
+            }, self::SHORTCUTS),
         ], 200, ['Content-Type' => 'application/manifest+json'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    }
+
+    const SHORTCUTS = ['mine', 'unassigned', 'new', 'search'];
+
+    /**
+     * Where a shortcut of the installed app leads, for the signed-in agent: their "Mine" folder, the "Unassigned"
+     * folder, a new ticket, the search. With several mailboxes, the first one that has something in that folder (the
+     * first one otherwise); for a new ticket, the first mailbox.
+     */
+    public function go($target)
+    {
+        $user = auth()->user();
+        if ($target === 'search') {
+            return redirect()->route('conversations.search');
+        }
+        $mailboxes = $user->mailboxesCanView();
+        if (!in_array($target, self::SHORTCUTS) || !count($mailboxes)) {
+            return redirect('/');
+        }
+        if ($target === 'new') {
+            return redirect()->route('conversations.create', ['mailbox_id' => $mailboxes->first()->id]);
+        }
+        $first = null;
+        foreach ($mailboxes as $mailbox) {
+            $query = \App\Folder::where('mailbox_id', $mailbox->id);
+            $query = $target === 'mine'
+                ? $query->where('type', \App\Folder::TYPE_MINE)->where('user_id', $user->id)
+                : $query->where('type', \App\Folder::TYPE_UNASSIGNED);
+            $folder = $query->first();
+            if (!$folder) {
+                continue;
+            }
+            $first = $first ?: $folder;
+            if ((int)$folder->active_count > 0) {
+                return redirect()->route('mailboxes.view.folder', ['id' => $mailbox->id, 'folder_id' => $folder->id]);
+            }
+        }
+        return $first
+            ? redirect()->route('mailboxes.view.folder', ['id' => $first->mailbox_id, 'folder_id' => $first->id])
+            : redirect('/');
+    }
+
+    /**
+     * Button of a notification (service worker, no session): "Assign to me" or "Close" on that ticket, for the agent
+     * the token was signed for, with the same rights as in the ticket itself. Answers with the agent's new badge count.
+     */
+    public function action(Request $request)
+    {
+        $data = WebPush::readActionToken($request->input('token'));
+        $user = $data ? \App\User::find($data['u']) : null;
+        $conversation = $data ? \App\Conversation::find($data['c']) : null;
+        if (!$user || !$conversation || (method_exists($user, 'isActive') && !$user->isActive())) {
+            return response()->json(['status' => 'error'], 403);
+        }
+        if (!$user->can('update', $conversation)) {
+            return response()->json(['status' => 'error'], 403);
+        }
+        // the agent for this request only (no session): what reacts to the change (history, notifications, other
+        // modules) sees who did it, as when it is done from the ticket
+        \Auth::setUser($user);
+        if ($data['a'] === 'assign') {
+            if (!$conversation->mailbox->userHasAccess($user->id)) {
+                return response()->json(['status' => 'error'], 403);
+            }
+            if ((int)$conversation->user_id !== (int)$user->id) {
+                $conversation->changeUser($user->id, $user);
+            }
+        } elseif ($data['a'] === 'close') {
+            if ((int)$conversation->status !== \App\Conversation::STATUS_CLOSED) {
+                $conversation->changeStatus(\App\Conversation::STATUS_CLOSED, $user);
+            }
+        } else {
+            return response()->json(['status' => 'error'], 400);
+        }
+        return response()->json(['status' => 'success', 'badge_count' => WebPush::badgeCount($user->id)]);
+    }
+
+    /** A subscription the browser renewed by itself (service worker, no session): see WebPush::renew(). */
+    public function resubscribe(Request $request)
+    {
+        $ok = WebPush::renew($request->input('old_endpoint'), $request->input('old_auth'), $request->input('subscription'),
+            $request->userAgent());
+        return response()->json(['status' => $ok ? 'success' : 'error'], $ok ? 200 : 403);
     }
 
     /**

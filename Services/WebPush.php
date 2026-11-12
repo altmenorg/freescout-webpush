@@ -122,6 +122,13 @@ class WebPush
             return false;
         }
         self::changeSubscriptions(function ($all) use ($user_id, $sub, $ua) {
+            // the same device subscribing again (the page re-sends it now and then) keeps the date it was added
+            $created = null;
+            foreach ($all as $s) {
+                if ($s['endpoint'] === $sub['endpoint'] && (int)$s['user_id'] === (int)$user_id) {
+                    $created = $s['created'] ?? null;
+                }
+            }
             $all = array_filter($all, function ($s) use ($sub) {
                 return $s['endpoint'] !== $sub['endpoint'];
             });
@@ -131,11 +138,72 @@ class WebPush
                 'p256dh'   => $sub['keys']['p256dh'],
                 'auth'     => $sub['keys']['auth'],
                 'ua'       => mb_substr((string)$ua, 0, 200),
-                'created'  => date('Y-m-d H:i:s'),
+                'created'  => $created ?: date('Y-m-d H:i:s'),
             ];
             return $all;
         });
         return true;
+    }
+
+    /**
+     * A subscription the browser renewed by itself (pushsubscriptionchange, in the service worker): the new one takes
+     * the place of the old one, for the same agent. The service worker has no session, so the request proves itself
+     * with the old subscription's auth secret, which only that browser and this server know. Returns whether it was
+     * accepted.
+     */
+    public static function renew($old_endpoint, $old_auth, $new_sub, $ua = '')
+    {
+        if (!is_string($old_endpoint) || !is_string($old_auth) || $old_auth === '') {
+            return false;
+        }
+        $owner = null;
+        foreach (self::subscriptions() as $s) {
+            if ($s['endpoint'] === $old_endpoint && hash_equals((string)$s['auth'], $old_auth)) {
+                $owner = (int)$s['user_id'];
+            }
+        }
+        if ($owner === null || !self::subscribe($owner, $new_sub, $ua)) {
+            return false;
+        }
+        if ($old_endpoint !== $new_sub['endpoint']) {
+            self::unsubscribe($old_endpoint, $owner);
+        }
+        return true;
+    }
+
+    /* ---------------------------------------------------------------- notification buttons */
+
+    const ACTION_TTL = 7 * 86400;                    // a button of an old notification stops working after a week
+
+    /** Token of a notification button: this agent, this ticket, this action, signed with the app key. */
+    public static function actionToken($user_id, $conversation_id, $action)
+    {
+        $payload = self::b64u(json_encode(['u' => (int)$user_id, 'c' => (int)$conversation_id, 'a' => (string)$action,
+            'e' => time() + self::ACTION_TTL]));
+        return $payload.'.'.self::b64u(hash_hmac('sha256', $payload, self::actionKey(), true));
+    }
+
+    /** ['u' => user id, 'c' => conversation id, 'a' => action] of a valid token, or null. */
+    public static function readActionToken($token)
+    {
+        if (!is_string($token) || substr_count($token, '.') !== 1) {
+            return null;
+        }
+        list($payload, $sig) = explode('.', $token);
+        if (!hash_equals(self::b64u(hash_hmac('sha256', $payload, self::actionKey(), true)), $sig)) {
+            return null;
+        }
+        $data = json_decode((string)self::unb64u($payload), true);
+        if (!is_array($data) || empty($data['u']) || empty($data['c']) || empty($data['a']) || (int)($data['e'] ?? 0) < time()) {
+            return null;
+        }
+        return $data;
+    }
+
+    /** Key of the button tokens: derived from the app key, never the key itself. */
+    protected static function actionKey()
+    {
+        return hash_hmac('sha256', 'webpush-notification-action', (string)config('app.key'), true);
     }
 
     /** Removes a subscription; with $user_id, only if it belongs to that agent. Returns whether one was removed. */

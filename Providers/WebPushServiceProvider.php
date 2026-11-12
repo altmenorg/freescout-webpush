@@ -70,7 +70,7 @@ class WebPushServiceProvider extends ServiceProvider
                         $payload['body'] = __('webpush::messages.new_activity');
                     }
                     foreach ($info['users'] as $user) {
-                        $items[] = [$user->id, $payload];
+                        $items[] = [$user->id, $payload + self::buttons($conv, $user)];
                     }
                 } catch (\Throwable $e) {
                     \Log::error('[WebPush] '.$e->getMessage());
@@ -84,6 +84,27 @@ class WebPushServiceProvider extends ServiceProvider
                 }
             }
         });
+    }
+
+    /**
+     * Buttons of a notification, for this agent (two at most, Chrome's limit): "Assign to me" when the ticket is not
+     * theirs, "Close" when it is not closed. Each carries a token signed for this agent, this ticket and this action,
+     * which the service worker sends back (it has no session). Phones that do not show buttons (iPhone) just open the
+     * ticket.
+     */
+    public static function buttons($conv, $user)
+    {
+        $actions = [];
+        if ((int)$conv->user_id !== (int)$user->id) {
+            $actions[] = ['action' => 'assign', 'title' => __('webpush::messages.action_assign')];
+        }
+        if ((int)$conv->status !== \App\Conversation::STATUS_CLOSED) {
+            $actions[] = ['action' => 'close', 'title' => __('webpush::messages.action_close')];
+        }
+        foreach ($actions as $i => $a) {
+            $actions[$i]['token'] = WebPush::actionToken($user->id, $conv->id, $a['action']);
+        }
+        return $actions ? ['actions' => $actions, 'failed' => __('webpush::messages.action_failed')] : [];
     }
 
     /** Manage › Settings › Web Push: name and icon of the app, contact given to the push services. */
@@ -182,6 +203,22 @@ class WebPushServiceProvider extends ServiceProvider
                 };
                 // for other modules (a mobile interface, for instance): current() / enable() / disable() promises
                 window.webpush = { current: current, enable: enable, disable: disable };
+
+                // This device's subscription, sent again once a day: if the browser replaced it without telling the
+                // service worker which one it replaced, or the server dropped it, the device gets its notifications
+                // back the next time FreeScout is opened, without the agent turning them on again.
+                if (Notification.permission === 'granted') {
+                    var lastSync = 0;
+                    try { lastSync = parseInt(window.localStorage.getItem('webpush_synced'), 10) || 0; } catch (e) {}
+                    if (Date.now() - lastSync > 86400000) {
+                        current().then(function (sub) {
+                            if (!sub) { return; }
+                            return $.ajax({ url: <?php echo json_encode(route('webpush.subscribe')); ?>, type: 'POST', contentType: 'application/json',
+                                headers: { 'X-CSRF-TOKEN': csrf() }, data: JSON.stringify({ subscription: sub.toJSON() }) })
+                                .done(function () { try { window.localStorage.setItem('webpush_synced', String(Date.now())); } catch (e) {} });
+                        });
+                    }
+                }
                 var toast = function (type, msg) { if (window.showFloatingAlert) { showFloatingAlert(type, msg); } };
 
                 <?php if ($own_notifications) { ?>

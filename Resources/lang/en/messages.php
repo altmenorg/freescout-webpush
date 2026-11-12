@@ -46,6 +46,15 @@ return [
     'test_sent'            => ':count device(s) notified',
     'test_none'            => 'No subscribed device accepted the notification',
     'invalid_subscription' => 'Invalid subscription',
+    'action_assign'        => 'Assign to me',
+    'action_close'         => 'Close',
+    'action_failed'        => 'Could not do it from the notification: tap to open the ticket.',
+
+    // shortcuts of the installed app (long press on its icon)
+    'shortcut_mine'        => 'My tickets',
+    'shortcut_unassigned'  => 'Unassigned',
+    'shortcut_new'         => 'New ticket',
+    'shortcut_search'      => 'Search',
 
     // diagnostics (settings page)
     'diagnostics'          => 'Diagnostics',

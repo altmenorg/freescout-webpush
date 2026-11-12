@@ -21,7 +21,8 @@ class Health
     const ASSETS = ['css/webpush.css', 'js/diagnostics.js', 'img/badge.png'];
 
     const ROUTES = ['webpush.manifest', 'webpush.sw', 'webpush.key', 'webpush.subscribe', 'webpush.unsubscribe',
-        'webpush.devices', 'webpush.badge', 'webpush.test', 'webpush.health', 'webpush.diagnostics'];
+        'webpush.devices', 'webpush.badge', 'webpush.test', 'webpush.health', 'webpush.diagnostics', 'webpush.go',
+        'webpush.action', 'webpush.resubscribe'];
 
     public static function check()
     {
