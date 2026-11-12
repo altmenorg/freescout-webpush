@@ -159,7 +159,8 @@ class WebPushController extends Controller
     {
         $user = auth()->user();
         $number = (int)ltrim((string)$request->input('ticket'), '# ');
-        $conversation = $number ? \App\Conversation::where('number', $number)
+        // the number the agent sees: the id, unless custom numbers are on (FreeScout's numberFieldName)
+        $conversation = $number ? \App\Conversation::where(\App\Conversation::numberFieldName(), $number)
             ->whereIn('mailbox_id', $user->mailboxesIdsCanView())->first() : null;
         if (!$conversation || !$user->can('update', $conversation)) {
             return response()->json(['status' => 'error', 'msg' => __('webpush::messages.share_no_ticket')]);
