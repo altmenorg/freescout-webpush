@@ -74,12 +74,23 @@ class WebPushController extends Controller
             }
             $first = $first ?: $folder;
             if ((int)$folder->active_count > 0) {
-                return redirect()->route('mailboxes.view.folder', ['id' => $mailbox->id, 'folder_id' => $folder->id]);
+                return $this->folderRedirect($target, $folder);
             }
         }
-        return $first
-            ? redirect()->route('mailboxes.view.folder', ['id' => $first->mailbox_id, 'folder_id' => $first->id])
-            : redirect('/');
+        return $first ? $this->folderRedirect($target, $first) : redirect('/');
+    }
+
+    /**
+     * The folder, or its view in the Refresh interface when that module is on: Refresh sends FreeScout's folders back
+     * to the last view the agent used, which would make "My tickets" and "Unassigned" land on the same page.
+     */
+    protected function folderRedirect($target, $folder)
+    {
+        if (\Route::has('refresh.tickets')) {
+            return redirect()->route('refresh.tickets', ['mailbox_id' => $folder->mailbox_id,
+                'view' => $target === 'mine' ? 'my-open' : 'unassigned']);
+        }
+        return redirect()->route('mailboxes.view.folder', ['id' => $folder->mailbox_id, 'folder_id' => $folder->id]);
     }
 
     /**
